@@ -2176,7 +2176,7 @@ dwz依赖xxhash.h,因此需要先将其补全。
 
 替换掉config.guess和config.sub
 
-到此，为系统做第一个备份。
+到此，可以为系统做第一个备份。
 
 rocky_vm-stage1.qcow2
 
@@ -2856,7 +2856,7 @@ check通不过，编译的时候添加`--nocheck`
 
 正常编译，安装。
 
-**注意**：记得要复制文件到/tools/lib/rpm/macros.d/
+**注意**：记得要复制文件到`/tools/lib/rpm/macros.d/`
 
 ## Unzip
 
@@ -3767,9 +3767,10 @@ rpmbuild -bb ~/rpmbuild/SPECS/graphviz.spec --without php --without ocaml --node
 ```
 ## Doxygen
 
-rpmbuild -bb rpmbuild/SPECS/doxygen.spec \--define \"\_module_build 1\"
-\--nodeps \--nocheck
-
+编译脚本：
+```bash
+rpmbuild -bb rpmbuild/SPECS/doxygen.spec --define "_module_build 1" --nodeps --nocheck
+```
 ## symlinks
 
 已经安装。
@@ -3868,6 +3869,18 @@ rpmbuild -bb rpmbuild/SPECS/doxygen.spec \--define \"\_module_build 1\"
 ```bash
 rpmbuild --rebuild /home/rocky/rpmbuild/SRPMS/ruby-3.3.10-12.el10\~bootstrap.loongarch.src.rpm --without systemtap --define "with_hardening_test 0" --nodeps --nocheck
 ```
+
+## 重要提醒
+下面开始要编译的软件包，与系统的启动、登录过程相关。
+
+当前状态下，系统的登录依赖的是/tools/目录中的文件；随着编译的进行，/tools中的部分可执行文件会被新编译的rpm包所提供的文件所取代，导致系统处于一个混乱的混合状态：rpm包提供的文件和/tools中的文件共同发挥作用，但彼此并不完全兼容。
+
+**注意**： 从当前开始，如果重启虚拟机，可能会导致虚拟机无法登录！建议从当前开始，不要关闭虚拟机，使用“保存虚拟机”的方法来取代关机。最好一口气完成所有与登录相关的软件包的编译，然后可以安全重启。
+
+**切记！**
+
+如果已经遇到了虚拟机无法登录的问题，也不必恐慌，后面还会介绍解决方案。
+
 
 ## libselinux
 
@@ -4116,9 +4129,9 @@ rpmbuild --rebuild /opt/srpms/Packages/pytest-7.4.3-5.el10.src.rpm --without tes
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/gtk-doc-1.33.2-12.el10.src.rpm --nodeps
 ```
-# 异常处理
+## 异常处理
 
-在编译的过程中，我关闭过虚拟机，重启以后虚拟机就无法登陆了，输入密码以后显示login incorrect。
+在编译的过程中，我关闭过虚拟机，重启以后虚拟机就无法登录了，输入密码以后显示login incorrect。
 
 直接挂载qcow2文件，chroot进去，查看日志
 
@@ -4147,686 +4160,590 @@ EOF
 
 补上这个文件以后，passwd程序可以正常运行了，但是登录还是有问题。
 
-请教了孙海勇老师，发现了问题的根源：在编译软件包的过程中，临时系统 /tools/文件夹内的、登录相关的软件包在逐步被新编译出来的rpm包替换掉，但如果只替换了一半，就会发现登录出现问题了。这个问题有两个解决方法：
+请教了孙海勇老师，发现了问题的根源：在编译软件包的过程中，临时系统 /tools/文件夹内的、登录相关的软件包在逐步被新编译出来的rpm包替换掉，但如果只替换了一半，就会发现登录出现问题了。
 
-## 方案1
+这个问题的解决方案是不使用虚拟机，改为将虚拟机的qcow2文件挂载到系统中，然后用chroot进入虚拟机内，开始编译。这样，可以绕过登录过程。
 
+从当前开始，后续的软件包编译是在chroot环境下进行的。
 
+## libtirpc
 
+由于已经编好了krb5,这个包所有的依赖关系都已经满足了。正常编译即可。
 
-libtirpc
-
-由于已经编好了krb5,这个包所有的依赖关系都已经满足了。
-
-libselinux
+## libselinux
 
 调用multiprocess的时候，遇到了Permisson denied的问题:
+```text
+sl = self._semlock = _multiprocessing.SemLock(
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied
+```
 
-sl = self.\_semlock = \_multiprocessing.SemLock(
+用root打包，规避这个问题。
 
-\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^
-
-PermissionError: \[Errno 13\] Permission denied
-
-用root打包，跳过这个问题。
-
-libcap-ng
+## libcap-ng
 
 用root打包。
 
-pam
+## pam
 
 注释掉了spec文件中，关于adg, dmg等文档的for循环
 
-rpmbuild -bb rpmbuild/SPECS/pam.spec \--nodeps \--define
-\'\_unpackaged_files_terminate_build 0\'
+编译脚本：
+```bash
+rpmbuild -bb rpmbuild/SPECS/pam.spec --nodeps --define '_unpackaged_files_terminate_build 0'
+```
 
-打包警告：
-
+打包的时候，存在警告：
+```text
 Installed (but unpackaged) file(s) found:
-
 /usr/lib/systemd/system/pam_namespace.service
+```
 
-libpwquality
-
-打包的时候遇到了这个问题：
-
-sl = self.\_semlock = \_multiprocessing.SemLock(
-
-\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^
-
-PermissionError: \[Errno 13\] Permission denied
+## libpwquality
 
 切换成root打包，可以正常编译。
 
-audit
+## audit
 
-注意，audit 的configure脚本中，似乎有处理器相关的部分，如\--with-aarch64
-\--with-riscv
+注意，audit 的configure脚本中，似乎有处理器相关的部分，如`--with-aarch64` `--with-riscv`
 
 需要确认这个是否会影响loongarch下的使用。
 
-Installed (but unpackaged) file(s) found:
+打包时的警告信息：
+```text
+  Installed (but unpackaged) file(s) found:
+   /usr/lib/systemd/system/audit-rules.service
+   /usr/lib/systemd/system/auditd.service
+   /usr/lib/tmpfiles.d/audit.conf
+```
 
-/usr/lib/systemd/system/audit-rules.service
 
-/usr/lib/systemd/system/auditd.service
+## util-linux
+修改spec文件中的编译参数，
 
-/usr/lib/tmpfiles.d/audit.conf
+- 将`--with-udev`改为`--without-udev`
 
-util-linux
+- `--with-systemd`改为`--without-systemd`
 
-> 将\--with-udev改为\--without-udev
->
-> \--with-systemd改为\--without-systemd
->
-> 注释掉不存在的文件：
->
-> %{\_unitdir}/fstrim.\*
->
-> uuidd.\*
->
-> uuidd-tmpfiles.conf
-
-至此，问题依然存在。为了调试，尝试编译strace
-
-补全依赖
-
-ima-evm-utils
+- 注释掉一些文件：
+```text
+ %{_unitdir}/fstrim.*
+uuidd.*
+uuidd-tmpfiles.conf
+```
+##  ima-evm-utils
 
 正常编译即可。
 
-elfutils
+## elfutils
 
 修改spec文件，如下
 
-\--enable-debuginfod-ima-verification=no
+`--enable-debuginfod-ima-verification=no`
 
-删掉
+删掉 `--enable-debuginfod-ima-cert-path=%{_sysconfdir}/keys/ima`
 
-\--enable-debuginfod-ima-cert-path=%{\_sysconfdir}/keys/ima
+## strace
 
-strace
+正常编译即可。安装了strace以后，就可以用strace工具来追踪程序的执行情况了。
 
-经过strace追踪，发现缺少/etc/nsswitch.conf, 根据孙海勇的CLFS,
-补上这个nsswitch.conf文件。
+经过strace追踪，发现系统中缺少`/etc/nsswitch.conf`, 根据孙海勇的CLFS文档, 补上这个文件。
 
-tss2
-
-正常编译即可。
-
-tpm2-tss
+## tss2
 
 正常编译即可。
 
-gnutls
+## tpm2-tss
 
-> 依赖tss2, 补上。
+正常编译即可。
 
-rpmbuild -bb rpmbuild/SPECS/gnutls.spec \--without dane \--without tpm2
-\--without tpm12 \--nodeps
+## gnutls
 
-crypto-policies
+依赖tss2, 需要提前编译好。
 
-> 修改spec文件中的ExclusiveArch, 添加loongarch64
->
-> rpmbuild -bb rpmbuild/SPECS/crypto-policies.spec \--nodeps \--nocheck
-> \--define \'\_unpackaged_files_terminate_build 0\'
->
-> 有这样的报错：
->
-> Installed (but unpackaged) file(s) found:
->
-> /usr/lib/systemd/system/fips-crypto-policy-overlay.service
+编译脚本
+```bash
+rpmbuild -bb rpmbuild/SPECS/gnutls.spec --without dane --without tpm2 --without tpm12 --nodeps
+```
+## crypto-policies
 
-fakechroot
-
-> 没有安装包，跳过。
-
-libpq
-
-> \--with-ldap改为 \--without-ldap
-
-mariadb-connector-c
-
-> 正常编译即可。
-
-cyrus-sasl
-
-> 将bootstrap_cyrus_sasl 设置为1.
-
-unixodbc
-
-正常编译即可。。
-
-openldap
-
-正常编译即可。。
-
-stunnel
-
-正常编译即可。。
-
-byacc
-
-正常编译即可。。
-
-checkpolicy
-
-正常编译即可。。
-
-sharutils
-
-正常编译即可。。
-
-libarchive
-
-正常编译即可。。
-
-Brotli
-
-正常编译即可。。
-
-Cmocka
-
-正常编译即可。。
-
-ducktape
-
-正常编译即可。。
-
-polkit
-
-修改spec文件，-D introspection=false
-
-一些文件没有生成，如polkit.service，polkit-tmpfiles.conf， \*.gir,
-\*.typelib
+修改spec文件中的ExclusiveArch, 添加loongarch64
 
 编译脚本：
+```bash
+rpmbuild -bb rpmbuild/SPECS/crypto-policies.spec --nodeps --nocheck --define '_unpackaged_files_terminate_build 0'
+```
+ 打包的时候，有这样的报错：
 
-PKG_CONFIG_PATH+=/tools/lib64/pkgconfig: rpmbuild -bb
-rpmbuild/SPECS/polkit.spec \--nodeps \--define
-\'\_unpackaged_files_terminate_build 0\'
+```text
+    Installed (but unpackaged) file(s) found:
+   /usr/lib/systemd/system/fips-crypto-policy-overlay.service
+```
 
-最终的报错：
+## fakechroot
 
+没有安装包，跳过。
+
+## libpq
+
+`--with-ldap`改为 `--without-ldap`
+
+## mariadb-connector-c
+
+正常编译即可。
+
+## cyrus-sasl
+
+ 将`bootstrap_cyrus_sasl` 设置为1.
+
+## unixodbc
+
+正常编译即可。
+
+## openldap
+
+正常编译即可。
+
+## stunnel
+
+正常编译即可。
+
+## byacc
+
+正常编译即可。
+
+## checkpolicy
+
+正常编译即可。
+
+## sharutils
+
+正常编译即可。
+
+## libarchive
+
+正常编译即可。
+
+## Brotli
+
+正常编译即可。
+
+## Cmocka
+
+正常编译即可。
+
+## ducktape
+
+正常编译即可。
+
+## polkit
+
+修改spec文件，`-Dintrospection=false`
+
+一些文件没有生成，如`polkit.service，polkit-tmpfiles.conf，*.gir,*.typelib`,需要对spec文件进行对应的修改。
+
+编译脚本：
+```bash
+PKG_CONFIG_PATH+=/tools/lib64/pkgconfig: rpmbuild -bb rpmbuild/SPECS/polkit.spec --nodeps  --define '_unpackaged_files_terminate_build 0'
+```
+最终打包的时候给出的警告：
+```text
 Installed (but unpackaged) file(s) found:
-
 /usr/lib/systemd/system/polkit.service
-
 /usr/lib/sysusers.d/polkit.conf
-
 /usr/lib/tmpfiles.d/polkit-tmpfiles.conf
+```
 
-pcsc-lite
+##  pcsc-lite
 
-修改spec文件， -Dlibsystemd=false 改为-Dlibsystemd=false
+修改spec文件， `-Dlibsystemd=true` 改为`-Dlibsystemd=false`
 
-PKG_CONFIG_PATH+=/tools/lib64/pkgconfig: rpmbuild -bb
-rpmbuild/SPECS/pcsc-lite.spec \--nodeps
-
-opensc
+编译脚本：
+```bash
+PKG_CONFIG_PATH+=/tools/lib64/pkgconfig: rpmbuild -bb rpmbuild/SPECS/pcsc-lite.spec --nodeps
+```
+## opensc
 
 依赖基本满足，正常编译即可。
-
-rpmbuild -bb rpmbuild/SPECS/opensc.spec \--nodeps
-
-cppunit
-
-正常编译即可
-
-softhsm
+```bash
+rpmbuild -bb rpmbuild/SPECS/opensc.spec --nodeps
+```
+## cppunit
 
 正常编译即可
 
-pkcs11-provider
+## softhsm
+
+正常编译即可
+
+## pkcs11-provider
 
 正常编译即可。
 
-libssh
+## libssh
 
-遇到如下的报错：
-
-/root/rpmbuild/BUILD/libssh-0.11.1/src/pki_crypto.c:
-在函数'pki_uri_import'中:
-
-/root/rpmbuild/BUILD/libssh-0.11.1/src/pki_crypto.c:2756:16:
-错误：隐式声明函数'ENGINE_load_private_key'
-\[-Wimplicit-function-declaration\]
-
-2756 \| pkey = ENGINE_load_private_key(engine, uri_name, NULL, NULL);
-
-\| \^\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~
-
-/root/rpmbuild/BUILD/libssh-0.11.1/src/pki_crypto.c:2756:14:
-错误：assignment to 'EVP_PKEY \*' {或称 'struct evp_pkey_st \*'} from
-'int' makes pointer from integer without a cast \[-Wint-conversion\]
-
-2756 \| pkey = ENGINE_load_private_key(engine, uri_name, NULL, NULL);
-
-\| \^
-
-/root/rpmbuild/BUILD/libssh-0.11.1/src/pki_crypto.c:2765:16:
-错误：隐式声明函数'ENGINE_load_public_key'
-\[-Wimplicit-function-declaration\]
-
-2765 \| pkey = ENGINE_load_public_key(engine, uri_name, NULL, NULL);
-
-\| \^\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~\~
-
-/root/rpmbuild/BUILD/libssh-0.11.1/src/pki_crypto.c:2765:14:
-错误：assignment to 'EVP_PKEY \*' {或称 'struct evp_pkey_st \*'} from
-'int' makes pointer from integer without a cast \[-Wint-conversion\]
-
-2765 \| pkey = ENGINE_load_public_key(engine, uri_name, NULL, NULL);
-
-经过查看源码，pki_crytoi.c中，有这样的语句：
-
-#if defined(WITH_PKCS11_URI) && !defined(WITH_PKCS11_PROVIDER)
-
-#include \<openssl/engine.h\>
-
-#endif
-
-在spec文件中，有这样的语句：
-
--DWITH_PKCS11_URI=ON \\
-
--DWITH_PKCS11_PROVIDER=ON \\
-
-问题可能在于缺少pkcs11-provider。
-
-要补全这个，需要补全opensc,softhsm
-
-已经补全，还需要修改一下spec文件
-
+需要补全opensc,softhsm，还需要修改一下spec文件
+```text
 -DUNIT_TESTING=OFF \\
-
 -DCLIENT_TESTING=OFF \\
-
 -DSERVER_TESTING=OFF
-
-libidn2
-
-正常编译即可。
-
-publicsuffix-list
+```
+## libidn2
 
 正常编译即可。
 
-libpsl
+## publicsuffix-list
 
 正常编译即可。
 
-curl
+## libpsl
 
 正常编译即可。
 
-jq
-
-QA_RPATHS=\$(( 0x0002\|0x0010 )) rpmbuild \--rebuild
-/opt/srpms/Packages/jq-1.7.1-11.el10.src.rpm
-
-socat
+## curl
 
 正常编译即可。
 
-elfutils
+## jq
+编译脚本
+```bash
+QA_RPATHS=$(( 0x0002\|0x0010 )) rpmbuild --rebuild /opt/srpms/Packages/jq-1.7.1-11.el10.src.rpm
+```
+## socat
+
+正常编译即可。
+
+## elfutils
 
 修改spec文件，如下
 
-\--enable-debuginfod-ima-verification=no
+`--enable-debuginfod-ima-verification=no`
 
-别的不用改，之前的修改方式是有问题的。
-
-tss2
+## tss2
 
 正常编译即可。
 
-ima-evm-utils
+## ima-evm-utils
 
 正常编译即可。
 
-autoconf-archive
+## autoconf-archive
 
 正常编译即可。
 
-python3-mallard-ducktype
+## python3-mallard-ducktype
 
 正常编译即可。
 
-yelp-xsl
+## yelp-xsl
 
 正常编译即可。
 
-yelp-tools
+## yelp-tools
 
 正常编译即可。
 
-mallard-rng
+## mallard-rng
 
 正常编译即可。
 
-dbus
+## dbus
 
 使用如下命令构建：
+```bash
+rpmbuild -bb rpmbuild/SPECS/dbus.spec  --nodeps  --define '_unpackaged_files_terminate_build 0'
+```
 
-rpmbuild -bb rpmbuild/SPECS/dbus.spec \--nodeps \--define
-\'\_unpackaged_files_terminate_build 0\'
-
-报错信息如下：
-
-absolute symlink: /usr/share/gtk-doc/html/dbus -\> /usr/share/doc/dbus
-
-absolute symlink:
-/usr/libexec/dbus-1/installed-tests/dbus/data/valid-config-files-system/system.conf
--\> /usr/share/dbus-1/system.conf
-
-absolute symlink:
-/usr/libexec/dbus-1/installed-tests/dbus/data/valid-config-files/session.conf
--\> /usr/share/dbus-1/session.conf
-
+警告信息如下：
+```text
+absolute symlink: /usr/share/gtk-doc/html/dbus -> /usr/share/doc/dbus
+absolute symlink: /usr/libexec/dbus-1/installed-tests/dbus/data/valid-config-files-system/system.conf -> /usr/share/dbus-1/system.conf
+absolute symlink: /usr/libexec/dbus-1/installed-tests/dbus/data/valid-config-files/session.conf -> /usr/share/dbus-1/session.conf
 Installed (but unpackaged) file(s) found:
-
 /tools/lib/sysusers.d/dbus.conf
+```
 
-crontabs
-
-正常编译即可。
-
-cronie
+## crontabs
 
 正常编译即可。
 
-logrotate
+## cronie
 
-rpmbuild \--rebuild /opt/srpms/Packages/logrotate-3.22.0-4.el10.src.rpm
-\--nodeps \--nocheck
+正常编译即可。
 
-rpm
+## logrotate
+
+编译脚本:
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/logrotate-3.22.0-4.el10.src.rpm --nodeps --nocheck
+```
+## rpm
 
 没有安装rust，所以无法安装rpm-sequoia。暂时去掉对这个的依赖。
 
-遇到了lua的问题，暂时不支持loongarch。
+遇到了lua的问题，查看 `/usr/include/luaconf.h`，发现它不支持loongarch。
 
-/usr/include/luaconf.h
+首先，需要重新编译安装lua。
 
-需要重新编译安装lua。
-
-修改rpmbuild/SOURCE/luaconf.h，添加：
-
-#elif defined(\_\_loongarch64)
-
-#include \"luaconf-loongarch64.h\"
-
-再次编译，遇到了新的问题undefined reference to \`pgpDigParamsSalt
+修改`rpmbuild/SOURCE/luaconf.h`，添加：
+```bash
+#elif defined(__loongarch64)
+#include "luaconf-loongarch64.h"
+```
+再次编译，遇到了新的问题`undefined reference to `pgpDigParamsSalt`
 
 修改spec文件，去掉两个补丁
-
+```text
 #rpm-4.19.x-pqc-algo.patch
-
 #rpm-4.19.x-pqc-fixes.patch
-
-这两个补丁导致了上述问题的发生。\
+```
+这两个补丁导致了上述问题的发生
 新的问题：
-
-tools/rpmdb \--rcfile rpmrc \--define \'\_db_backend ndb\'
-\--dbpath=/root/rpmbuild/BUILD/rpm-4.19.1.1/\_build/ndb \--initdb
-
-error: can\'t create transaction lock on / (是一个目录)
-
+```text
+tools/rpmdb --rcfile rpmrc --define '_db_backend ndb' --dbpath=/root/rpmbuild/BUILD/rpm-4.19.1.1/_build/ndb --initdb
+error: can't create transaction lock on / (是一个目录)
+```
 按照孙海勇书中的提示，注释掉相关的语句。
 
-构建脚本
+最终的构建脚本
+```bash
+rpmbuild -bb rpmbuild/SPECS/rpm.spec --without sequoia --nodeps
+```
+rpm的一个插件不太好用，暂时禁用这个插件，可以给它改个名字 `/usr/lib64/rpm-plugins/dbus_announce.so`
 
-rpmbuild -bb rpmbuild/SPECS/rpm.spec \--without sequoia \--nodeps
-
-rpm的一个插件不太好用，暂时禁用这个插件，给它改个名字
-
-/usr/lib64/rpm-plugins/dbus_announce.so
-
-重新编译一些软件包
-
-perl-generators
+##  perl-generators
+由于包管理系统有变动，到这个阶段，需要重新编译一些软件包。
 
 正常编译即可。
 
-redhat-rpm-config
+## redhat-rpm-config
 
 注意，这个包之前修改过，不要用原始的包，要打包修改过的那个包！
 
-python-rpm-generators
+## python-rpm-generators
 
 正常编译即可。
 
-fonts-rpm-macros
+## fonts-rpm-macros
 
 正常编译即可。
 
-ruby
+## ruby
 
 ruby需要用到redhat-annobin-cc1，这个应该被清空，因为不存在plugin/gcc-annobin.so。同时清空redhat-hardened-ld。
 
-注意，一定要用修改过的redhat-rpm-config,否则编译ruby的时候使用的参数不对，编译会失败！
+注意，一定要用修改过的`redhat-rpm-config`,否则编译ruby的时候使用的参数不对，编译会失败！
 
 很多文件被安装到了/usr/local/share下面，没有安装到/usr/share/下面，需要确认问题的根源。不应该出现这样的问题。
 
 做了如下的改动，，将
-
-\--with-sitedir=\'%{ruby_sitelibdir}\' \\
-
-\--with-sitearchdir=\'%{ruby_sitearchdir}\' \\
-
+```bash
+--with-sitedir='%{ruby_sitelibdir}' \
+--with-sitearchdir='%{ruby_sitearchdir}' \
+```
 修改为了
-
-\--with-sitedir=%{\_datadir}/ruby/site_ruby \\
-
-\--with-sitearchdir=%{\_libdir}/ruby/site_ruby \\
-
-将mv %{buildroot}%{ruby_libdir}/gems %{buildroot}%{gem_dir}
+```bash
+--with-sitedir=%{_datadir}/ruby/site_ruby \
+--with-sitearchdir=%{_libdir}/ruby/site_ruby \
+```
+将`mv %{buildroot}%{ruby_libdir}/gems %{buildroot}%{gem_dir}`
 
 改为了
-
-if \[ -d %{buildroot}%{ruby_libdir}/gems \]; then
-
-mv -v %{buildroot}%{ruby_libdir}/gems %{buildroot}%{gem_dir}
-
+```bash
+if [ -d %{buildroot}%{ruby_libdir}/gems ]; then
+  mv -v %{buildroot}%{ruby_libdir}/gems %{buildroot}%{gem_dir}
 fi
+```
 
-lua
-
-正常编译即可。
-
-dwz
-
-依赖xxhash和gdb，先编译后者。
-
-编译的时候，遇到这样的报错，NATIVE_POINTER_SIZE这个参数没有定义。应该是与当前的locale相关。
-
-编译的时候，添加LC_ALL=C 问题解决。
-
-babeltrace
+## lua
 
 正常编译即可。
 
-xxhash
+## dwz
+
+依赖xxhash和gdb。
+
+编译的时候，遇到这样的报错，`NATIVE_POINTER_SIZE`这个参数没有定义。应该是与当前的locale相关。
+
+编译的时候，添加`LC_ALL=C`, 问题解决。
+
+## babeltrace
 
 正常编译即可。
 
-gdb
+## xxhash
 
 正常编译即可。
 
-kmod
+## gdb
 
 正常编译即可。
 
-libaio
+## kmod
 
 正常编译即可。
 
-libqb
+## libaio
 
 正常编译即可。
 
-libnl3
+## libqb
 
 正常编译即可。
 
-kronosnet
+## libnl3
 
 正常编译即可。
 
-corosync
+## kronosnet
 
-rpmbuild \--rebuild /opt/srpms/Packages/corosync-3.1.9-2.el10.src.rpm
-\--without systemd \--without snmp \--nodeps
+正常编译即可。
 
-device-mapper-persistent-data
+## corosync
 
-缺少%cargo_prep宏。[需要在补全rust-toolset后，编译这个包。]{.mark}
+编译脚本：
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/corosync-3.1.9-2.el10.src.rpm --without systemd --without snmp --nodeps 
+```
 
-lvm2
+## device-mapper-persistent-data
+
+缺少`%cargo_prep`宏。需要在补全`rust-toolset`后，编译这个包。
+
+## lvm2
 
 除了按照书中的内容进行修改，还需要改动spec文件，修正configure的参数
 
-\--with-systemd=no
+```bash
+--with-systemd=no
+--disable-app-machineid
+```
 
-\--disable-app-machineid
+修正一下systemd相关的内容，修改`/usr/lib/rpm/macros.d/macros.systemd`，将所有的`/tools/`改为
+`/usr/`。
+```bash
+sed -i "s@/tools/@/usr/@g" macros.systemd
+```
+这样，就会把systemd相关的内容，安装到`/usr/lib/systemd`,而不是`/tools/lib/systemd`
 
-中间修正：
+实际上，这个操作在书中P171已经提到了。一定要认真读书。
 
-修正一下systemd相关的内容，修改/usr/lib/rpm/macros.d/macros.systemd，将所有的/tools/改为
-/usr/。
+重新编译，生成rpm包，以lvm2-，device-mapper开头。先安装上部分rpm包。
+```bash
+rpm -ivh device-mapper-1.02.206-3.el10~bootstrap.loongarch.loongarch64.rpm \
+      device-mapper-devel-1.02.206-3.el10~bootstrap.loongarch.loongarch64.rpm \
+      device-mapper-libs-1.02.206-3.el10~bootstrap.loongarch.loongarch64.rpm \
+      --nodeps
+```
+注意，很多其他的包，可能已经踩了这个坑，也都需要重新编译。
 
-sed -i \"s@/tools/@/usr/@g\" macros.systemd
-
-这样，就会把systemd相关的内容，安装到/usr/lib/systemd,而不是/tools/lib/systemd
-
-实际上，这个操作在书中P171已经提到了。
-
-重新编译，生成rpm包，以lvm2-\*，device-mapper\*开头。
-
-很多其他的包，也都需要重新编译。
-
-json-c
+## json-c
 
 正常编译即可。
 
-argon2
+## argon2
 
 找不到源码包。
 
-cryptstepup
+## cryptstepup
 
-依赖device-mapper,先安装上部分rpm包。
+依赖device-mapper。打包脚本
+```bash
+rpmbuild -bb rpmbuild/SPECS/cryptsetup.spec --define "version_no_tilde 2.7.5" --nodeps
+```
 
-rpm -ivh
-device-mapper-1.02.206-3.el10\~bootstrap.loongarch.loongarch64.rpm
-device-mapper-devel-1.02.206-3.el10\~bootstrap.loongarch.loongarch64.rpm
-device-mapper-libs-1.02.206-3.el10\~bootstrap.loongarch.loongarch64.rpm
-\--nodeps
+## libpcap
+
+正常编译即可。
+
+## libmnl
 
 打包脚本
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/libmnl-1.0.5-7.el10.src.rpm --define '_unpackaged_files_terminate_build 0'
+```
+生成了很多文档`man3/`
 
-rpmbuild -bb rpmbuild/SPECS/cryptsetup.spec \--define \"version_no_tilde
-2.7.5\" \--nodeps
-
-libpcap
-
-正常编译即可。
-
-libmnl
-
-打包脚本
-
-rpmbuild \--rebuild /opt/srpms/Packages/libmnl-1.0.5-7.el10.src.rpm
-\--define \'\_unpackaged_files_terminate_build 0\'
-
-生成了很多文档man3/
-
-libnftnl
+## libnftnl
 
 正常编译即可。
 
-libnfnetlink
+## libnfnetlink
 
 正常编译即可。
 
-libnetfilter_conntrack
+## libnetfilter_conntrack
 
 正常编译即可。
 
-iptables
+## iptables
 
 正常编译即可。
 
-qrencode
+## qrencode
 
 找不到安装包。
 
-libxkbfile
+## libxkbfile
 
 正常编译即可。
 
-xorg-x11-xkb-utils
+## xorg-x11-xkb-utils
 
 找不到安装包
 
-xkeyboard-config
+## xkeyboard-config
 
 正常安装即可
 
-libxkbcommon
+## libxkbcommon
 
-[依赖wayland的东西，补全后继续。]{.mark}
+依赖wayland的东西，补全后继续.
 
-console-setup
+## console-setup
 
-缺少这个程序，看看需要重新编译哪一个包。
+缺少`/usr/lib/rpm/perl.req`程序，看看需要重新编译哪一个包。
 
-/usr/lib/rpm/perl.req
+需要重新编译perl-generators, 但这个包自己依赖自己，需要用/tools/lib/rpm/perl.req过渡一下。
 
-重新编译perl-generators,
-但这个包自己依赖自己，需要用/tools/lib/rpm/perl.req过渡一下。
-
-kbd
+## kbd
 
 依赖xkeyboard-config
 
-libbpf
+## libbpf
 
 正常编译即可。
 
-python-docutils
+## python-docutils
 
 正常编译即可。
 
-bpftool
+## bpftool
 
 依赖rst2man，需要安装python-docutils
 
-libseccomp
+## libseccomp
 
-源码似乎有架构相关的内容。2.5.6不支持龙架构。[需要确认。]{.mark}
+源码似乎有架构相关的内容。2.5.6不支持龙架构。需要确认。
 
 <https://github.com/seccomp/libseccomp/pull/356>
 
 最好升libseccomp到2.6.0
 
-libcbor
+## libcbor
 
 去掉文档的编译
 
-python-markupsafe
-
-正常编译即可。。
-
-python-jinja2
+## python-markupsafe
 
 正常编译即可。
 
-systemd
+## python-jinja2
+
+正常编译即可。
+
+## systemd
 
 依赖libbpf，先安装libbpf。
 
@@ -4834,66 +4751,66 @@ systemd
 
 依赖clang，看看能否不依赖clang。
 
-去掉对bpf的依赖。
+去掉对bpf的依赖
 
--Dbpf-framework=disabled
+`-Dbpf-framework=disabled`
 
--Dbpf-compiler=gcc
+`-Dbpf-compiler=gcc`
 
 去掉libseccomp的依赖。
 
--Dseccomp=disabled
+`-Dseccomp=disabled`
 
 去掉对fido2的依赖
 
-> -Dlibfido2=disabled
+`-Dlibfido2=disabled`
 
 去掉对xkbcommon的依赖
 
-> -Dxkbcommon=disabled
+`-Dxkbcommon=disabled`
 
 编译脚本
 
-rpmbuild -bb rpmbuild/SPECS/systemd.spec \--define \"version_no_tilde
-257\" \--nodeps \--nocheck
-
-dbus-broker
-
-正常编译即可。
-
-dbus
+```bash
+rpmbuild -bb rpmbuild/SPECS/systemd.spec --define "version_no_tilde 257 " --nodeps --nocheck
+```
+## dbus-broker
 
 正常编译即可。
 
-ipset
+## dbus
 
 正常编译即可。
 
-intltools
+## ipset
 
-正常编译即可。。
+正常编译即可。
 
-jansson
+## intltools
+
+正常编译即可。
+
+## jansson
 
 去掉制作文档的部分。
 
-tree-sitter
+## tree-sitter
+正常编译即可。
 
-desktop-file-utils
+## desktop-file-utils
 
 依赖emacs。调整一下顺序，先安装emacs。
 
 解决一下循环依赖。
 
 编译的时候，这样写：
+```bash
+rpmbuild -bb rpmbuild/SPECS/desktop-file-utils.spec -D "_emacs_sitestartdir /usr/share/emacs/site-lisp/site-start.d" -D " _emacs_sitelispdir /usr/share/emacs/site-lisp" --nodeps
+```
+## appstream
+正常编译即可。
 
-rpmbuild -bb rpmbuild/SPECS/desktop-file-utils.spec -D
-\"\_emacs_sitestartdir /usr/share/emacs/site-lisp/site-start.d\" -D \"
-\_emacs_sitelispdir /usr/share/emacs/site-lisp\" \--nodeps
-
-appstream
-
-emacs
+## emacs
 
 依赖json，先编译jansson
 
@@ -4901,313 +4818,286 @@ emacs
 
 emacs也依赖desktop-file-utils。循环依赖了。
 
-还依赖appstream-utils。加上\--nocheck
+还依赖appstream-utils。构建的时候加上`--nocheck`。
 
-google-noto-fonts
-
-rpmbuild \--rebuild
-/opt/srpms/Packages/google-noto-fonts-20240401-5.el10.src.rpm \--nocheck
-
-xaw3d
+## google-noto-fonts
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/google-noto-fonts-20240401-5.el10.src.rpm --nocheck
+```
+## xaw3d
 
 已经编译过了。
 
-vala
+## vala
 
 正常编译即可。
 
-libsecret
+## libsecret
 
 依赖gi-docgen，需要想办法绕过或者补上。
 
-spec文件中添加一行：
-
--Dgtk_doc=false
+spec文件中添加一行： `-Dgtk_doc=false`
 
 需要根据下面的报错，补全软件包。
 
-Couldn\'t find include \'GObject-2.0.gir\' (search path:
-\'\[\'/usr/share/gir-1.0\', \'/root/.local/share/gir-1.0\', \'gir-1.0\',
-\'/usr/local/share/gir-1.0\', \'/usr/share/gir-1.0\',
-\'/usr/share/gir-1.0\', \'/usr/share/gir-1.0\',
-\'/usr/share/gir-1.0\'\]\')
-
+```text
+Couldn't find include 'GObject-2.0.gir' (search path: '['/usr/share/gir-1.0', '/root/.local/share/gir-1.0', 'gir-1.0', '/usr/local/share/gir-1.0', '/usr/share/gir-1.0', '/usr/share/gir-1.0', '/usr/share/gir-1.0', '/usr/share/gir-1.0']')
+```
 经过确认，GObject-2.0.gir这个文件应该是gobject-devel包里提供的。
 
 补全了glib2以后，再编译libsecret，完成。
 
-python3-mako
+## python3-mako
 
 完成编译。
 
-PyYaml
+## PyYaml
 
 完成编译
 
-Python-markdown
+## Python-markdown
 
-加上\--nocheck
+加上`--nocheck`
 
-gobject-introspection
+## gobject-introspection
 
 重新编译。依赖关系都已经满足。
 
-shared-mime-info
-
-正常编译即可。。
-
-glib2
-
-重新编译，[待完成]{.mark}，尽量补全依赖关系。
-
-pkgconfig(gi-docgen) 被
-glib2-2.80.4-10.el10\~bootstrap.loongarch.loongarch64 需要
-
-pkgconfig(sysprof-capture-4) 被
-glib2-2.80.4-10.el10\~bootstrap.loongarch.loongarch64 需要
-
-systemtap-sdt-devel 被
-glib2-2.80.4-10.el10\~bootstrap.loongarch.loongarch64 需要
-
-systemtap-sdt-dtrace 被
-glib2-2.80.4-10.el10\~bootstrap.loongarch.loongarch64 需要
-
-这些依赖关系就不补了。好在gobject-introspection已经装好了。
-
-重新编译的glib2，补全了很多文件，重要的是补全了/usr/share/gir-1.0/GObject-2.0.gir。
-
-perl-error
+## shared-mime-info
 
 正常编译即可。
 
-perl-termreadkey
+## glib2
+
+重新编译，尽量补全依赖关系。
+
+重新编译的glib2，补全了很多文件，重要的是补全了`/usr/share/gir-1.0/GObject-2.0.gir`。
+
+
+## perl-error
 
 正常编译即可。
 
-xorg-x11-xauth
+## perl-termreadkey
 
-正常编译即可。。
+正常编译即可。
 
-libusbx
+## xorg-x11-xauth
+
+正常编译即可。
+
+## libusbx
 
 找不到安装包。
 
-hidapi
+## hidapi
 
 找不到安装包。
 
-libcbor
+## libcbor
 
-正常编译即可。。
+正常编译即可。
 
-libfido2
+## libfido2
 
-第一次编译的时候警报很多，[先放弃了。]{.mark}
+将所有的依赖关系都补全了，编译很顺利。
 
-第二次编译，所有的依赖关系都补全了，编译很顺利。
-
-openssh
+## openssh
 
 编译的时候有报错：
-
+```text
 configure: error: seccomp_filter sandbox not supported on
 loongarch64-redhat-linux-gnu
-
+```
 注释掉
 
-\--with-sandbox=seccomp_filter
+`--with-sandbox=seccomp_filter`
 
-check通不过，加上\--nocheck
+check通不过，加上`--nocheck`
 
-git
-
-rpmbuild \--rebuild /opt/srpms/Packages/git-2.47.3-1.el10.src.rpm
-\--nodeps \--nocheck
-
+## git
+编译脚本
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/git-2.47.3-1.el10.src.rpm --nodeps --nocheck
+```
 选择性安装一部分git的软件包即可。
 
-umockdev
-
-rpmbuild \--rebuild /opt/srpms/Packages/umockdev-0.19.1-2.el10.src.rpm
-\--nodeps \--nocheck
-
-libgudev1
+## umockdev
+编译脚本
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/umockdev-0.19.1-2.el10.src.rpm --nodeps --nocheck
+```
+## libgudev1
 
 正常编译即可。
 
-libusb
+## libusb
 
-依赖关系有些复杂，libusb-\>umockdev-devel-\>libgudev1-devel-\>umockdev-devel
+依赖关系有些复杂，libusb->umockdev-devel->libgudev1-devel->umockdev-devel
 
 需要解决一下循环依赖。
 
 已经解决，完成编译、安装。
 
-efi-rpm-macros
+## efi-rpm-macros
 
 正常编译，似乎没有什么问题。
 
-mandoc
+## mandoc
 
 正常编译即可。
 
-libabigail
+## libabigail
 
 跳过生成文档的部分，编译通过。
 
-efivar
+## efivar
 
 在exclusivearch中，增加loongarch64。源码包需要重新打包。
 
-pesign
+## pesign
 
 在exclusivearch中，增加loongarch64。源码包需要重新打包。
 
-linux-atm
+## linux-atm
 
 找不到源码包。
 
-psmisc
+## psmisc
 
 修改spec文件，在一个架构相关的地方添加loongarch。源码包也重新打包。
-
+```bash
 rpmbuild -ba rpmbuild/SPECS/psmisc.spec
-
-iproute
-
-正常编译
-
-iputils
+```
+## iproute
 
 正常编译
 
-perl-Test-Pod
+## iputils
 
 正常编译
 
-perl-Pod-Parser
+## perl-Test-Pod
 
 正常编译
 
-perl-Test-Output
+## perl-Pod-Parser
 
-rpmbuild \--rebuild
-/opt/srpms/Packages/perl-Test-Output-1.03.4-6.el10.src.rpm \--nodeps
+正常编译
 
-perl-IPC-Run3
+## perl-Test-Output
 
-rpmbuild \--rebuild
-/opt/srpms/Packages/perl-IPC-Run3-0.049-4.el10.src.rpm \--nodeps
-\--nocheck
-
-libmaxminddb
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/perl-Test-Output-1.03.4-6.el10.src.rpm --nodeps
+```
+## perl-IPC-Run3
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/perl-IPC-Run3-0.049-4.el10.src.rpm --nodeps --nocheck
+```
+## libmaxminddb
 
 尝试尽量补全依赖关系
 
-rubygem-ronn-ng
+## rubygem-ronn-ng
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/rubygem-ronn-ng-0.10.1-5.el10.src.rpm --nodeps --nocheck
+```
+## rubygem-kramdown
+```bash
+rpmbuild  --rebuild /opt/srpms/Packages/rubygem-kramdown-2.4.0-11.el10.src.rpm --nodeps --nocheck
+```
 
-rpmbuild \--rebuild
-/opt/srpms/Packages/rubygem-ronn-ng-0.10.1-5.el10.src.rpm \--nodeps
-\--nocheck
+## rubygem-mustache
 
-rubygem-kramdown
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/rubygem-mustache-1.1.1-11.el10.src.rpm --nodeps --nocheck
+```
 
-rpmbuild \--rebuild
-/opt/srpms/Packages/rubygem-kramdown-2.4.0-11.el10.src.rpm \--nodeps
-\--nocheck
+## rubygem-nokogiri
+正常编译
 
-rubygem-mustache
-
-rpmbuild \--rebuild
-/opt/srpms/Packages/rubygem-mustache-1.1.1-11.el10.src.rpm \--nodeps
-\--nocheck
-
-rubygem-nokogiri
-
-rubygem-racc
+## rubygem-racc
 
 安装失败，不清楚为什么。
 
 报错是这样的：
-
+```text
 ERROR:  Error installing racc-1.7.3.gem:
 ERROR: Failed to build gem native extension.
     No such file or directory @ dir_s_mkdir - /usr/share/gems/gems/racc-1.7.3/ext/racc/cparse/.gem.20260512-110776-rija44
-
-ipcalc
+```
+## ipcalc
 
 缺少racc, 未能安装。只是用ronn来产生文档。可以跳过。
 
 解决方案：删掉rubygems-ronn-ng软件包，在文件列表中注释掉ipcalc.1
-
-rpmbuild -bb rpmbuild/SPECS/ipcalc.spec \--nodeps \--nocheck
-
-dhcp
+```bash
+rpmbuild -bb rpmbuild/SPECS/ipcalc.spec --nodeps --nocheck
+```
+## dhcp
 
 依赖ipcalc，还是需要想办法补上ipcalc。
 
 补上了ipcalc
 
-dracut
+## dracut
 
 正常编译。
 
-os-prober
+## os-prober
 
-正常编译，生成rpm包。[注意，这个包没有安装！]{.mark}
+正常编译，生成rpm包。**注意**: 这个包没有安装！
+`/root/rpmbuild/RPMS/loongarch64/os-prober-1.81-9.el10~bootstrap.loongarch.loongarch64.rpm`
 
-/root/rpmbuild/RPMS/loongarch64/os-prober-1.81-9.el10\~bootstrap.loongarch.loongarch64.rpm
+## grub2
 
-grub2
+跳过,没有编译。计划用grub 2.14替代。
 
-跳过。
-
-tzdata
+## tzdata
 
 修改spec文件，注释掉所有关于java的语句。
+```bash
+rpmbuild -bb rpmbuild/SPECS/tzdata.spec --nodeps
+```
+## bc
 
-rpmbuild -bb rpmbuild/SPECS/tzdata.spec \--nodeps
+正常编译即可。
 
-bc
+## dwarves
 
-正常编译即可。。
+正常编译即可。
 
-dwarves
-
-正常编译即可。。
-
-libical
-
-rpmbuild \--rebuild /opt/srpms/Packages/libical-3.0.18-3.el10.src.rpm
-\--nodeps \--nocheck
-
+## libical
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/libical-3.0.18-3.el10.src.rpm --nodeps --nocheck
+```
 安装的时候，依赖tzdata
 
-libell
+## libell
 
 bluez依赖libell。完成。
 
-bluez
+## bluez
 
 修改SPEC文件，去掉enable-cups。
 
-net-tools
+## net-tools
 
 依赖bluez-devel。完成
 
-tinyxml2
+## tinyxml2
 
 找不到安装包。
 
-cppcheck
+## cppcheck
 
 找不到安装包。
 
-libkcapi
-
-rpmbuild \--rebuild /opt/srpms/Packages/libkcapi-1.5.0-3.el10.src.rpm
+## libkcapi
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/libkcapi-1.5.0-3.el10.src.rpm
 \--nodeps \--without doc \--nocheck
-
+```
 linux-firmware
 
 完成编译，[尚未安装]{.mark}。
