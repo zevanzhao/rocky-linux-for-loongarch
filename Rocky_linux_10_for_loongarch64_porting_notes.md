@@ -5095,1050 +5095,585 @@ bluez依赖libell。完成。
 
 ## libkcapi
 ```bash
-rpmbuild --rebuild /opt/srpms/Packages/libkcapi-1.5.0-3.el10.src.rpm
-\--nodeps \--without doc \--nocheck
+rpmbuild --rebuild /opt/srpms/Packages/libkcapi-1.5.0-3.el10.src.rpm --nodeps --without doc --nocheck
 ```
-linux-firmware
 
-完成编译，[尚未安装]{.mark}。
+## linux-firmware
 
-gnu-efi
+完成编译，尚未安装
 
-exclusivearch
-中，添加loongarch64。正确的解决方案应该是给%efi这个rpm的宏，添加loongarch64。
+## gnu-efi
+exclusivearch 中，添加loongarch64。
+
+更加合适的解决方案应该是给%efi这个rpm的宏，添加loongarch64。
 
 %ifarch x86_64 aarch64 这句后面，也加上loongarch64
 
 完成编译。
 
-inih
+## inih
 
 完成。
 
-userspace-rcu
+## userspace-rcu
 
 需要打补丁。打补丁的内容参考之前的笔记。打补丁后，正常编译即可。
 
-xfsprogs
+## xfsprogs
 
-依赖inih-devel和userspace-rcu-devel，需要补全。
+依赖inih-devel和userspace-rcu-devel，需要补全依赖关系。
 
 补全后完成。
 
-sudo
+## sudo
 
 完成。
 
-kernel
+## kernel
 
-[跳过。]{.mark}
+跳过
 
-重新编译一些依赖systemd的软件包
+到这里，重新编译一些依赖systemd的软件包
 
-perl-Module-Build
+##  perl-Module-Build
 
-rpmbuild \--rebuild
-/opt/srpms/Packages/perl-Module-Build-0.42.34-7.el10.src.rpm \--nodeps
-\--nocheck
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/perl-Module-Build-0.42.34-7.el10.src.rpm --nodeps --nocheck
+```
 
 补充utils-linux的依赖关系
 
-po4a
+## po4a
 
-rpmbuild \--rebuild /opt/srpms/Packages/po4a-0.69-7.el10.src.rpm
-\--nodeps
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/po4a-0.69-7.el10.src.rpm --nodeps
+```
 
-perl-YAML-Tiny
+## perl-YAML-Tiny
 
 正常编译即可。
 
-perl-Module-Install
+##  perl-Module-Install
 
-rpmbuild \--rebuild
-/opt/srpms/Packages/perl-Module-Install-1.21-6.el10.src.rpm \--nodeps
-\--nocheck
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/perl-Module-Install-1.21-6.el10.src.rpm --nodeps --nocheck
+```
 
-perl-Module-Install-AuthorRequires
-
-正常编译
-
-perl-File-Remove
+## perl-Module-Install-AuthorRequires
 
 正常编译
 
-perl-Module-Install-ReadmeFromPod
+## perl-File-Remove
+
+正常编译
+
+## perl-Module-Install-ReadmeFromPod
 
 未能成功编译。
 
-authselect
+## authselect
 
 补充utils-linux的依赖关系。
 
-因为未能补全perl-Module-Install-ReadmeFromPod的依赖关系，不编译manpages。
+因为未能补全`perl-Module-Install-ReadmeFromPod`的依赖关系，不编译manpages。
 
-会安装一些.mo文件，这些文件并没有打包。如：
-
-/usr/share/locale/ca/LC_MESSAGES/authselect.mo
+会安装一些.mo文件，这些文件并没有打包。如：`/usr/share/locale/ca/LC_MESSAGES/authselect.mo`
 
 最终的编译脚本：
-
-rpmbuild -bb authselect.spec \--nocheck \--define
-\'\_unpackaged_files_terminate_build 0\'
-
+```bash
+rpmbuild -bb authselect.spec --nocheck --define '_unpackaged_files_terminate_build 0'
+```
 完成安装。
 
-utils-linux
+## utils-linux
 
 重新编译，并（尽量）补全了依赖关系。
 
-dbus
+## dbus
 
 无需改动spec文件。
-
-rpmbuild -bb dbus.spec \--nodeps
-
+```bash
+rpmbuild -bb dbus.spec --nodeps
+```
 修改了macros.systemd以后，文件会被放在正确的路径。
 
-pcsc-lite
+## pcsc-lite
 
 重新编译即可。
 
-polkit
+## polkit
 
 重新编译即可。
 
-crypto-policies
+## crypto-policies
 
 修改SPEC文件中的ExclusiveArch, 添加Loongarch64
 
 重新打包，编译，安装。
 
-elfutils
+## elfutils
 
-重新编译打包，无需修改。太感动了！
+重新编译打包，无需修改。
 
-audit
+## audit
 
-重现编译打包。不报错了。
+重新编译打包。不报错了。
 
-libeconf
-
-正常编译即可。
-
-docbook5-schemas
+## libeconf
 
 正常编译即可。
 
-pam
+## docbook5-schemas
+
+正常编译即可。
+
+## pam
 
 依赖libeconf,docbook5-schemas，补全。
 
 重新编译安装。
 
-chkconfig
+## chkconfig
 
 重新编译安装。
 
-libusers
+## libusers
 
 重新编译安装。
 
-shadow-utils
+## shadow-utils
 
 重新编译安装。
 
-procps-ng
+## procps-ng
 
 重新编译安装。
 
-libtirpc
+## libtirpc
 
 重新编译安装。
 
-sanlock
+## sanlock
 
 正常编译安装，补全lvm2的依赖关系。
 
-libnvme
+## libnvme
 
-不编译文档，将-Ddocs=all -Ddoc-build=true改为 -Ddocs=false
--Ddoc-build-false
+不编译文档，将`-Ddocs=all -Ddoc-build=true`改为 `-Ddocs=false -Ddoc-build-false`
 
 注释掉有关文档安装的所有语句。
+```bash
+rpmbuild -bb rpmbuild/SPECS/libnvme.spec --nodeps
+```
 
-rpmbuild -bb rpmbuild/SPECS/libnvme.spec \--nodeps
-
-下面的包都需要重新编译：
-
-lvm2
-
-重新编译安装。
-
-corosync
-
-rpmbuild \--rebuild /opt/srpms/Packages/corosync-3.1.9-2.el10.src.rpm
-\--without snmp
-
-libpq
+## lvm2
 
 重新编译安装。
 
-krb5
+## corosync
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/corosync-3.1.9-2.el10.src.rpm --without snmp
+```
+## libpq
+
+重新编译安装。
+
+## krb5
 
 依然还是不生成文档。重新编译安装。
 
-elinks
+## elinks
 
 重新编译安装。
 
-p11-kit
-
-rpmbuild \--rebuild /opt/srpms/Packages/p11-kit-0.25.5-7.el10.src.rpm
-\--nocheck
-
-fuse3
+## p11-kit
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/p11-kit-0.25.5-7.el10.src.rpm --nocheck
+```
+## fuse3
 
 e2fsprogs依赖fuse3。
 
-e2fsprogs
+## e2fsprogs
 
-rpmbuild \--rebuild /opt/srpms/Packages/e2fsprogs-1.47.1-4.el10.src.rpm
-\--nocheck
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/e2fsprogs-1.47.1-4.el10.src.rpm --nocheck
+```
 
-配置和重启系统
-
+## 配置和重启系统
+```bash
 sudo mv /etc/machine-id /etc/machine-id.bak
-
 sudo mv /etc/profile /etc/profile.bak
+sudo rpm -Uvh /home/rocky/rpmbuild/RPMS/noarch/setup-*.rpm --force
+```
+重启系统，准备进入第10章。
 
-sudo rpm -Uvh /home/rocky/rpmbuild/RPMS/noarch/setup-\*.rpm \--force
+重启顺利，开始编译第10章的内容。
 
-重启系统，准备进入第10章
-
-重启顺利！
-
-第10章
-
-zchunk
+## zchunk
 
 找不到安装包。
 
-libsolv
+## libsolv
 
 正常编译安装即可。
 
-python-coverage
+## python-coverage
 
 找不到安装包。
 
-vim
+## vim
 
 暂时没有编译gtk3,因此不编译vim的图形界面。
-
-rpmbuild \--rebuild /opt/srpms/Packages/vim-9.1.083-6.el10.src.rpm
-\--without gui \--nodeps
-
-python-nose
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/vim-9.1.083-6.el10.src.rpm --without gui --nodeps
+```
+## python-nose
 
 找不到安装包
 
-gpgme
+## gpgme
 
 安装的时候遇到了问题。需要禁用另外一个rpm的插件。
-
-sudo rpm -e
-rpm-plugin-ima-4.19.1.1-20.el10\~bootstrap.loongarch.loongarch64
-rpm-plugin-dbus-announce-4.19.1.1-20.el10\~bootstrap.loongarch.loongarch64
+```bash
+sudo rpm -e \
+rpm-plugin-ima-4.19.1.1-20.el10~bootstrap.loongarch.loongarch64 \
+rpm-plugin-dbus-announce-4.19.1.1-20.el10~bootstrap.loongarch.loongarch64
+```
 
 编译脚本：
+```bash
+QA_RPATHS=$(( 0x0001)) rpmbuild --rebuild /opt/srpms/Packages/gpgme-1.23.2-6.el10.src.rpm --without qt5 --without qt6
+```
 
-QA_RPATHS=\$(( 0x0001)) rpmbuild \--rebuild
-/opt/srpms/Packages/gpgme-1.23.2-6.el10.src.rpm \--without qt5
-\--without qt6
-
-patchutils
+## patchutils
 
 直接编译安装即可。
 
-check
+## check
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/check-0.15.2-17.el10.src.rpm --nodeps 
+```
 
-rpmbuild \--rebuild /opt/srpms/Packages/check-0.15.2-17.el10.src.rpm
-\--nodeps
-
-python-charset-normalizer
-
-正常编译安装。
-
-python-idna
+## python-charset-normalizer
 
 正常编译安装。
 
-python-urllib3
+## python-idna
 
 正常编译安装。
 
-python-requests
+## python-urllib3
 
-pyxattr
+正常编译安装。
 
-librepo
+## python-requests
+
+正常编译安装。
+
+## pyxattr
+正常编译安装。
+
+## librepo
 
 check的时候有报错
+```text
+home/rocky/rpmbuild/BUILD/librepo-1.18.0/tests/test_gpg.c:51:F:Main:test_gpg_check_signature:0: Checking valid key and data from file failed with "Error during parsing OpenPGP packets"
+/home/rocky/rpmbuild/BUILD/librepo-1.18.0/tests/test_gpg.c:171:F:Main:test_gpg_check_armored_key_import_test_export:0: Assertion 'subkeys != NULL' failed: subkeys == 0
+/home/rocky/rpmbuild/BUILD/librepo-1.18.0/tests/test_gpg.c:171:F:Main:test_gpg_check_binary_key_import_test_export:0: Assertion 'subkeys != NULL' failed: subkeys == 0
+/home/rocky/rpmbuild/BUILD/librepo-1.18.0/tests/test_gpg.c:283:F:Main:test_gpg_check_import_padded:0: Assertion 'tmp_err == NULL' failed: tmp_err == 0x150f61de0
+```
+原因暂时不清楚。先加上`--nocheck`绕过
 
-home/rocky/rpmbuild/BUILD/librepo-1.18.0/tests/test_gpg.c:51:F:Main:test_gpg_check_signature:0:
-Checking valid key and data from file failed with \"Error during parsing
-OpenPGP packets\"
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/librepo-1.18.0-6.el10_0.src.rpm --without pythontest --nodeps --nocheck 
+```
 
-/home/rocky/rpmbuild/BUILD/librepo-1.18.0/tests/test_gpg.c:171:F:Main:test_gpg_check_armored_key_import_test_export:0:
-Assertion \'subkeys != NULL\' failed: subkeys == 0
-
-/home/rocky/rpmbuild/BUILD/librepo-1.18.0/tests/test_gpg.c:171:F:Main:test_gpg_check_binary_key_import_test_export:0:
-Assertion \'subkeys != NULL\' failed: subkeys == 0
-
-/home/rocky/rpmbuild/BUILD/librepo-1.18.0/tests/test_gpg.c:283:F:Main:test_gpg_check_import_padded:0:
-Assertion \'tmp_err == NULL\' failed: tmp_err == 0x150f61de0
-
-加上\--nocheck
-
-rpmbuild \--rebuild /opt/srpms/Packages/librepo-1.18.0-6.el10_0.src.rpm
-\--without pythontest \--nodeps \--nocheck
-
-tix
+## tix
 
 正常编译安装。
 
-pycairo
+## pycairo
 
 正常编译安装。
 
-pygobject
+## pygobject
 
-rpmbuild \--rebuild /opt/srpms/Packages/pygobject3-3.46.0-7.el10.src.rpm
-\--nodeps \--nocheck
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/pygobject3-3.46.0-7.el10.src.rpm --nodeps --nocheck
+```
 
-python-six
+## python-six
 
 正常编译安装。
 
-libmodulemd
+## libmodulemd
 
-修改SPEC文件 -Dwith_docs=true改为false
+修改SPEC文件 `-Dwith_docs=true`改为`-Dwith_docs=false`
 
-libdnf
+## libdnf
 
 按照书中的要求，修改SPEC文件。
 
 有一个测试通不过。跳过。
-
-rpmbuild -bb rpmbuild/SPECS/libdnf.spec \--nodeps \--nocheck
-
+```bash
+rpmbuild -bb rpmbuild/SPECS/libdnf.spec --nodeps --nocheck
+```
 补充编译一些软件包
 
-debugedit
+## debugedit
 
 debugedit只在tools中安装了，由于更新了/etc/profile,
 不去/tools/bin/中寻找程序，因此找不到这个程序了。debugedit依赖自身，所以先在/usr/bin做一个指向/tools/bin/debugedit的符号链接补全依赖关系。
 
-> 编译安装以后，/usr/bin/debugedit不再是符号链接。
+编译安装以后，/usr/bin/debugedit不再是符号链接。
 
-pps-tools
+## pps-tools
 
-> 正常编译安装即可。
+ 正常编译安装即可。
 
-chrony
+## chrony
 
-> 正常编译安装即可。
+ 正常编译安装即可。
 
-dhcpcd
+## dhcpcd
 
 正常编译安装即可。安装以后，可以运行dhcpcd,从dhcp获得IP地址，从而正常使用ssh。
 
-libcomps
+## libcomps
 
-> 修改spec文件，不制作pydocs
+修改spec文件，不制作pydocs
 
-lua-rpm-macros
-
-正常编译安装
-
-forge-srpm-macros
+## lua-rpm-macros
 
 正常编译安装
 
-redhat-rpm-config
+## forge-srpm-macros
+
+正常编译安装
+
+## redhat-rpm-config
 
 重新编译安装，以正确提供fedora/common.lua文件。
 
-要记得将/usr/lib/rpm/redhat/redhat-annobin-cc1变为空文件！
+要记得将`/usr/lib/rpm/redhat/redhat-annobin-cc1`变为空文件！
 
-augeas
+## augeas
 
 编译报错
 
-error: lua script failed: \[string \"forgemeta\"\]:2: module
-\'fedora.common\' not found:
-
-no field package.preload\[\'fedora.common\'\]
-
-no file \'/usr/lib/rpm//lua/fedora/common.lua\'
-
-no file \'/usr/lib64/lua/5.4/fedora/common.so\'
-
-no file \'/usr/lib64/lua/5.4/loadall.so\'
-
-no file \'./fedora/common.so\'
-
-no file \'/usr/lib64/lua/5.4/fedora.so\'
-
-no file \'/usr/lib64/lua/5.4/loadall.so\'
-
-no file \'./fedora.so\'
+```text
+error: lua script failed: [string "forgemeta"]:2: module 'fedora.common' not found:
+	no field package.preload['fedora.common']
+	no file '/usr/lib/rpm//lua/fedora/common.lua'
+	no file '/usr/lib64/lua/5.4/fedora/common.so'
+	no file '/usr/lib64/lua/5.4/loadall.so'
+	no file './fedora/common.so'
+	no file '/usr/lib64/lua/5.4/fedora.so'
+	no file '/usr/lib64/lua/5.4/loadall.so'
+	no file './fedora.so'
+```
 
 重新安装redhat-rpm-config后，可以正常编译安装。
 
-libtar
+## libtar
 
 没有源码包。
 
-satyr
+## satyr
 
 没有源码包。
 
-libmodman
+## libmodman
 
 没有源码包。
 
-gsettings-desktop-schemas
+## gsettings-desktop-schemas
 
 正常编译安装。
 
-libproxy
+## libproxy
 
 需要一个gi-docgen的程序，暂时不好编译，跳过文档的生成。
 
-添加-Ddocs=false选项， 并将%{\_docdir}/libproxy-1.0/行注释掉。
+添加`-Ddocs=false`选项， 并将`%{_docdir}/libproxy-1.0/`行注释掉。
 
-xmlrpc-c
-
-没有源码包。
-
-mailx
+## xmlrpc-c
 
 没有源码包。
 
-libreport
+## mailx
 
 没有源码包。
 
-dnf
+## libreport
+
+没有源码包。
+
+## dnf
 
 按照书中提示，修改spec文件。
 
-composefs
+## composefs
 
 修改SPEC文件，强行添加-Dman=disabled
 
-ostree
+## ostree
 
-rpmbuild \--rebuild /opt/srpms/Packages/ostree-2025.6-1.el10.src.rpm
-\--nodeps
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/ostree-2025.6-1.el10.src.rpm --nodeps
+```
+**注意**：没有安装ostree-grub2。
 
-注意：没有安装ostree-grub2。
-
-python-wheel
+## python-wheel
 
 已经安装
 
-python-pip
+## python-pip
 
 已经安装。
 
-python-six
+## python-six
 
 已经安装
 
-python-setuptools_scm
+## python-setuptools_scm
 
 已经安装
 
-python-Dateutil
+## python-Dateutil
 
 去掉文档编译命令
 
-python-distro
+## python-distro
 
 正常编译。
 
-python3-systemd
+## python3-systemd
 
 不编译文档。
 
-dbus-python
+## dbus-python
 
 正常编译安装。
 
-drpm
+## drpm
 
 没有源码包。
 
-createrepo_c
-
-rpmbuild \--rebuild
-/opt/srpms/Packages/createrepo_c-1.1.2-4.el10.src.rpm \--nodeps
-
-dnf-plugins-core
+## createrepo_c
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/createrepo_c-1.1.2-4.el10.src.rpm --nodeps
+```
+## dnf-plugins-core
 
 正常编译安装。
 
-mc
+## mc
 
 一个终端界面好用的文件管理工具。正常编译安装。
 
-创建本地仓库
+## 创建本地仓库
 
 按照书中的提示进行操作。
 
 可以使用rsync -auv命令，替代cp, 完成文件的复制。
 
-修改\~/.bashrc, 设置：
+修改`~/.bashrc`, 设置：
+```bash
+export PS1='[\u@\h \W]\$ '
+```
 
-export PS1=\'\[\\u@\\h \\W\]\\\$ \'
-
-nano
+## nano
 
 正常编译安装。
 
-创建本地的yum repo文件
+## 创建本地的yum repo文件
 
-man-pages
+## man-pages
 
 用rpmbuild编译，用dnf install 安装。
 
-python-psutils
+## python-psutils
 
 尽量给llvm补全依赖
 
-python-ptyprocess
+## python-ptyprocess
 
-zsh
+## zsh
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/zsh-5.9-15.el10.src.rpm --nodeps --nocheck
+```
+## python-pexpect
 
-rpmbuild \--rebuild /opt/srpms/Packages/zsh-5.9-15.el10.src.rpm
-\--nodeps \--nocheck
+## llvm
 
-python-pexpect
-
-llvm
-
-~~编译llvm,依赖llvm提供的clang~~
-
-~~首先，用gcc/g++编译llvm。~~
-
-遇到这样的报错：
-
-loading initial cache file
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/projects/builtins/tmp/builtins-cache-RelWithDebInfo.cmake
-
-\-- The C compiler identification is unknown
-
-\-- The ASM compiler identification is Clang with GNU-like command-line
-
-\-- Found assembler:
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/bin/clang
-
-\-- Detecting C compiler ABI info
-
-\-- Detecting C compiler ABI info - failed
-
-CMake Warning (dev) at /usr/share/cmake/Modules/GNUInstallDirs.cmake:253
-(message):
-
-Unable to determine default CMAKE_INSTALL_LIBDIR directory because no
-
-target architecture is known. Please enable at least one language before
-
-including GNUInstallDirs.
-
-Call Stack (most recent call first):
-
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/compiler-rt/cmake/base-config-ix.cmake:9
-(include)
-
-CMakeLists.txt:25 (include)
-
-This warning is for project developers. Use -Wno-dev to suppress it.
-
-\-- Looking for unwind.h
-
-\-- Looking for unwind.h - not found
-
-\-- Looking for rpc/xdr.h
-
-\-- Looking for rpc/xdr.h - not found
-
-\-- Could NOT find LLVM (missing: LLVM_DIR)
-
-CMake Warning at
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/compiler-rt/cmake/Modules/CompilerRTUtils.cmake:314
-(message):
-
-UNSUPPORTED COMPILER-RT CONFIGURATION DETECTED: LLVM cmake package not
-
-found.
-
-Reconfigure with -DLLVM_CMAKE_DIR=/path/to/llvm.
-
-Call Stack (most recent call first):
-
-CMakeLists.txt:29 (load_llvm_config)
-
-\-- LLVM_MAIN_SRC_DIR:
-\"/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm\"
-
-\-- Attempting to mock the changes made by LLVMConfig.cmake
-
-\-- LLVM_CMAKE_DIR:
-\"/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/cmake/modules\"
-
-CMake Error at
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/compiler-rt/cmake/Modules/CompilerRTMockLLVMCMakeConfig.cmake:60
-(message):
-
-Fetching target triple from compiler \"\" is not implemented.
-
-Call Stack (most recent call first):
-
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/compiler-rt/cmake/Modules/CompilerRTMockLLVMCMakeConfig.cmake:11
-(compiler_rt_mock_llvm_cmake_config_set_target_triple)
-
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/compiler-rt/cmake/Modules/CompilerRTUtils.cmake:360
-(compiler_rt_mock_llvm_cmake_config)
-
-CMakeLists.txt:29 (load_llvm_config)
-
-\-- Configuring incomplete, errors occurred!
-
-\[3549/4298\] : && /bin/g++ -O2 -fexceptions -g1 -grecord-gcc-switches
--pipe -Wall -Wno-complain-wrong-lang -Werror=format-security
--Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS
--specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -march=loongarch64
--msimd=lsx -D_DEFAULT_SOURCE -Dasm=\_\_asm\_\_ -fPIC
--fno-semantic-interposition -fvisibility-inlines-hidden
--Werror=date-time -fno-lifetime-dse -Wall -Wextra -Wno-unused-parameter
--Wwrite-strings -Wcast-qual -Wno-missing-field-initializers -pedantic
--Wno-long-long -Wimplicit-fallthrough -Wno-maybe-uninitialized
--Wno-nonnull -Wno-class-memaccess -Wno-redundant-move
--Wno-pessimizing-move -Wno-noexcept-type -Wdelete-non-virtual-dtor
--Wsuggest-override -Wno-comment -Wno-misleading-indentation
--Wctad-maybe-unsupported -fdiagnostics-color -ffunction-sections
--fdata-sections -O2 -fexceptions -g1 -grecord-gcc-switches -pipe -Wall
--Wno-complain-wrong-lang -Werror=format-security
--Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS
--specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -march=loongarch64
--msimd=lsx -D_DEFAULT_SOURCE -Dasm=\_\_asm\_\_ -DNDEBUG -Wl,-z,relro
--Wl,\--as-needed -Wl,-z,now
--specs=/usr/lib/rpm/redhat/redhat-hardened-ld
--specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,\--build-id=sha1
--Wl,\--build-id=sha1
--Wl,-rpath-link,/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./lib64
--Wl,\--gc-sections
-tools/verify-uselistorder/CMakeFiles/verify-uselistorder.dir/verify-uselistorder.cpp.o
--o bin/verify-uselistorder
--Wl,-rpath,\"\\\$ORIGIN/../lib64:/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/lib64:\"
-lib64/libLLVM.so.20.1 && :
-
-FAILED: runtimes/builtins-stamps/builtins-configure
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/runtimes/builtins-stamps/builtins-configure
-
-cd
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/runtimes/builtins-bins
-&& /usr/bin/cmake \--no-warn-unused-cli
--DCMAKE_C_COMPILER=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./bin/clang
--DCMAKE_CXX_COMPILER=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./bin/clang++
--DCMAKE_ASM_COMPILER=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./bin/clang
--DCMAKE_LINKER=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./bin/ld.lld
--DCMAKE_AR=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./bin/llvm-ar
--DCMAKE_RANLIB=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./bin/llvm-ranlib
--DCMAKE_NM=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./bin/llvm-nm
--DCMAKE_OBJDUMP=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./bin/llvm-objdump
--DCMAKE_OBJCOPY=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./bin/llvm-objcopy
--DCMAKE_STRIP=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./bin/llvm-strip
--DCMAKE_READELF=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./bin/llvm-readelf
--DCMAKE_C_COMPILER_TARGET=loongarch64-redhat-linux-gnu
--DCMAKE_CXX_COMPILER_TARGET=loongarch64-redhat-linux-gnu
--DCMAKE_ASM_COMPILER_TARGET=loongarch64-redhat-linux-gnu
--DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_INSTALL_PREFIX=/usr/lib64/llvm20
--DLLVM_BINARY_DIR=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build
--DLLVM_CONFIG_PATH=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/bin/llvm-config
--DLLVM_ENABLE_WERROR=OFF
--DLLVM_HOST_TRIPLE=loongarch64-unknown-linux-gnu
--DLLVM_HAVE_LINK_VERSION_SCRIPT=1
--DLLVM_USE_RELATIVE_PATHS_IN_DEBUG_INFO=OFF
--DLLVM_USE_RELATIVE_PATHS_IN_FILES=OFF -DLLVM_LIT_ARGS=-vv
--DLLVM_SOURCE_PREFIX= -DPACKAGE_VERSION=20.1.8
--DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_MAKE_PROGRAM=/bin/ninja-build
--DCMAKE_EXPORT_COMPILE_COMMANDS=1
--DLLVM_LIBRARY_OUTPUT_INTDIR=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./lib64
--DLLVM_RUNTIME_OUTPUT_INTDIR=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./bin
--DLLVM_DEFAULT_TARGET_TRIPLE=loongarch64-redhat-linux-gnu
--DLLVM_ENABLE_PER_TARGET_RUNTIME_DIR=ON
--DLLVM_CMAKE_DIR=/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build
--DCMAKE_C_COMPILER_WORKS=ON -DCMAKE_ASM_COMPILER_WORKS=ON
--DHAVE_LLVM_LIT=ON -DCLANG_RESOURCE_DIR=../lib/clang/20
--DCOMPILER_RT_INCLUDE_TESTS=OFF
--DCOMPILER_RT_INSTALL_PATH=/usr/lib/clang/20 -GNinja
--C/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/projects/builtins/tmp/builtins-cache-RelWithDebInfo.cmake
--S
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/runtimes/../../compiler-rt/lib/builtins
--B
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/runtimes/builtins-bins
-&& /usr/bin/cmake -E touch
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/runtimes/builtins-stamps/builtins-configure
-
-\[3551/4298\] : && /bin/g++ -O2 -fexceptions -g1 -grecord-gcc-switches
--pipe -Wall -Wno-complain-wrong-lang -Werror=format-security
--Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS
--specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -march=loongarch64
--msimd=lsx -D_DEFAULT_SOURCE -Dasm=\_\_asm\_\_ -fPIC
--fno-semantic-interposition -fvisibility-inlines-hidden
--Werror=date-time -fno-lifetime-dse -Wall -Wextra -Wno-unused-parameter
--Wwrite-strings -Wcast-qual -Wno-missing-field-initializers -pedantic
--Wno-long-long -Wimplicit-fallthrough -Wno-maybe-uninitialized
--Wno-nonnull -Wno-class-memaccess -Wno-redundant-move
--Wno-pessimizing-move -Wno-noexcept-type -Wdelete-non-virtual-dtor
--Wsuggest-override -Wno-comment -Wno-misleading-indentation
--Wctad-maybe-unsupported -fdiagnostics-color -ffunction-sections
--fdata-sections -O2 -fexceptions -g1 -grecord-gcc-switches -pipe -Wall
--Wno-complain-wrong-lang -Werror=format-security
--Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS
--specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -march=loongarch64
--msimd=lsx -D_DEFAULT_SOURCE -Dasm=\_\_asm\_\_ -DNDEBUG -Wl,-z,relro
--Wl,\--as-needed -Wl,-z,now
--specs=/usr/lib/rpm/redhat/redhat-hardened-ld
--specs=/usr/lib/rpm/redhat/redhat-hardened-ld-errors
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -Wl,\--build-id=sha1
--Wl,\--build-id=sha1
--Wl,-rpath-link,/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/./lib64
--Wl,\--gc-sections tools/sancov/CMakeFiles/sancov.dir/sancov.cpp.o
-tools/sancov/CMakeFiles/sancov.dir/sancov-driver.cpp.o -o bin/sancov
--Wl,-rpath,\"\\\$ORIGIN/../lib64:/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/lib64:\"
-lib64/libLLVM.so.20.1 && :
-
-\[3552/4298\] /bin/g++ -D_GNU_SOURCE -D\_\_STDC_CONSTANT_MACROS
--D\_\_STDC_FORMAT_MACROS -D\_\_STDC_LIMIT_MACROS
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/tools/opt
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/tools/opt
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/include
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/include -O2
--fexceptions -g1 -grecord-gcc-switches -pipe -Wall
--Wno-complain-wrong-lang -Werror=format-security
--Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS
--specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -march=loongarch64
--msimd=lsx -D_DEFAULT_SOURCE -Dasm=\_\_asm\_\_ -fPIC
--fno-semantic-interposition -fvisibility-inlines-hidden
--Werror=date-time -fno-lifetime-dse -Wall -Wextra -Wno-unused-parameter
--Wwrite-strings -Wcast-qual -Wno-missing-field-initializers -pedantic
--Wno-long-long -Wimplicit-fallthrough -Wno-maybe-uninitialized
--Wno-nonnull -Wno-class-memaccess -Wno-redundant-move
--Wno-pessimizing-move -Wno-noexcept-type -Wdelete-non-virtual-dtor
--Wsuggest-override -Wno-comment -Wno-misleading-indentation
--Wctad-maybe-unsupported -fdiagnostics-color -ffunction-sections
--fdata-sections -O2 -fexceptions -g1 -grecord-gcc-switches -pipe -Wall
--Wno-complain-wrong-lang -Werror=format-security
--Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS
--specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -march=loongarch64
--msimd=lsx -D_DEFAULT_SOURCE -Dasm=\_\_asm\_\_ -DNDEBUG -std=c++17 -MD
--MT tools/opt/CMakeFiles/LLVMOptDriver.dir/NewPMDriver.cpp.o -MF
-tools/opt/CMakeFiles/LLVMOptDriver.dir/NewPMDriver.cpp.o.d -o
-tools/opt/CMakeFiles/LLVMOptDriver.dir/NewPMDriver.cpp.o -c
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/tools/opt/NewPMDriver.cpp
-
-\[3553/4298\] /bin/g++ -DLLVM_BUILD_STATIC -D_GNU_SOURCE
--D\_\_STDC_CONSTANT_MACROS -D\_\_STDC_FORMAT_MACROS
--D\_\_STDC_LIMIT_MACROS
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/tools/yaml2obj
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/tools/yaml2obj
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/include
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/include -O2
--fexceptions -g1 -grecord-gcc-switches -pipe -Wall
--Wno-complain-wrong-lang -Werror=format-security
--Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS
--specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -march=loongarch64
--msimd=lsx -D_DEFAULT_SOURCE -Dasm=\_\_asm\_\_ -fPIC
--fno-semantic-interposition -fvisibility-inlines-hidden
--Werror=date-time -fno-lifetime-dse -Wall -Wextra -Wno-unused-parameter
--Wwrite-strings -Wcast-qual -Wno-missing-field-initializers -pedantic
--Wno-long-long -Wimplicit-fallthrough -Wno-maybe-uninitialized
--Wno-nonnull -Wno-class-memaccess -Wno-redundant-move
--Wno-pessimizing-move -Wno-noexcept-type -Wdelete-non-virtual-dtor
--Wsuggest-override -Wno-comment -Wno-misleading-indentation
--Wctad-maybe-unsupported -fdiagnostics-color -ffunction-sections
--fdata-sections -O2 -fexceptions -g1 -grecord-gcc-switches -pipe -Wall
--Wno-complain-wrong-lang -Werror=format-security
--Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS
--specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -march=loongarch64
--msimd=lsx -D_DEFAULT_SOURCE -Dasm=\_\_asm\_\_ -DNDEBUG -std=c++17 -MD
--MT tools/yaml2obj/CMakeFiles/yaml2obj.dir/yaml2obj.cpp.o -MF
-tools/yaml2obj/CMakeFiles/yaml2obj.dir/yaml2obj.cpp.o.d -o
-tools/yaml2obj/CMakeFiles/yaml2obj.dir/yaml2obj.cpp.o -c
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/tools/yaml2obj/yaml2obj.cpp
-
-\[3554/4298\] /bin/g++ -D_GNU_SOURCE -D\_\_STDC_CONSTANT_MACROS
--D\_\_STDC_FORMAT_MACROS -D\_\_STDC_LIMIT_MACROS
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/unittests/ADT
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/unittests/ADT
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/include
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/include
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/third-party/unittest/googletest/include
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/third-party/unittest/googlemock/include
--O2 -fexceptions -g1 -grecord-gcc-switches -pipe -Wall
--Wno-complain-wrong-lang -Werror=format-security
--Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS
--specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -march=loongarch64
--msimd=lsx -D_DEFAULT_SOURCE -Dasm=\_\_asm\_\_ -fPIC
--fno-semantic-interposition -fvisibility-inlines-hidden
--Werror=date-time -fno-lifetime-dse -Wall -Wextra -Wno-unused-parameter
--Wwrite-strings -Wcast-qual -Wno-missing-field-initializers -pedantic
--Wno-long-long -Wimplicit-fallthrough -Wno-maybe-uninitialized
--Wno-nonnull -Wno-class-memaccess -Wno-redundant-move
--Wno-pessimizing-move -Wno-noexcept-type -Wdelete-non-virtual-dtor
--Wsuggest-override -Wno-comment -Wno-misleading-indentation
--Wctad-maybe-unsupported -fdiagnostics-color -ffunction-sections
--fdata-sections -O2 -fexceptions -g1 -grecord-gcc-switches -pipe -Wall
--Wno-complain-wrong-lang -Werror=format-security
--Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS
--specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -march=loongarch64
--msimd=lsx -D_DEFAULT_SOURCE -Dasm=\_\_asm\_\_ -DNDEBUG -std=c++17
--Wno-dangling-else -Wno-variadic-macros -Wno-suggest-override -MD -MT
-unittests/ADT/CMakeFiles/ADTTests.dir/AnyTest.cpp.o -MF
-unittests/ADT/CMakeFiles/ADTTests.dir/AnyTest.cpp.o.d -o
-unittests/ADT/CMakeFiles/ADTTests.dir/AnyTest.cpp.o -c
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/unittests/ADT/AnyTest.cpp
-
-\[3555/4298\] /bin/g++ -DLLVM_BUILD_STATIC -D_GNU_SOURCE
--D\_\_STDC_CONSTANT_MACROS -D\_\_STDC_FORMAT_MACROS
--D\_\_STDC_LIMIT_MACROS
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/tools/obj2yaml
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/tools/obj2yaml
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/redhat-linux-build/include
--I/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/include -O2
--fexceptions -g1 -grecord-gcc-switches -pipe -Wall
--Wno-complain-wrong-lang -Werror=format-security
--Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS
--specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -march=loongarch64
--msimd=lsx -D_DEFAULT_SOURCE -Dasm=\_\_asm\_\_ -fPIC
--fno-semantic-interposition -fvisibility-inlines-hidden
--Werror=date-time -fno-lifetime-dse -Wall -Wextra -Wno-unused-parameter
--Wwrite-strings -Wcast-qual -Wno-missing-field-initializers -pedantic
--Wno-long-long -Wimplicit-fallthrough -Wno-maybe-uninitialized
--Wno-nonnull -Wno-class-memaccess -Wno-redundant-move
--Wno-pessimizing-move -Wno-noexcept-type -Wdelete-non-virtual-dtor
--Wsuggest-override -Wno-comment -Wno-misleading-indentation
--Wctad-maybe-unsupported -fdiagnostics-color -ffunction-sections
--fdata-sections -O2 -fexceptions -g1 -grecord-gcc-switches -pipe -Wall
--Wno-complain-wrong-lang -Werror=format-security
--Wp,-U_FORTIFY_SOURCE,-D_FORTIFY_SOURCE=3 -Wp,-D_GLIBCXX_ASSERTIONS
--specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong
--specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -march=loongarch64
--msimd=lsx -D_DEFAULT_SOURCE -Dasm=\_\_asm\_\_ -DNDEBUG -std=c++17 -MD
--MT tools/obj2yaml/CMakeFiles/obj2yaml.dir/elf2yaml.cpp.o -MF
-tools/obj2yaml/CMakeFiles/obj2yaml.dir/elf2yaml.cpp.o.d -o
-tools/obj2yaml/CMakeFiles/obj2yaml.dir/elf2yaml.cpp.o -c
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/llvm/tools/obj2yaml/elf2yaml.cpp
-
-ninja: build stopped: subcommand failed.
-
-error: Bad exit status from /var/tmp/rpm-tmp.QUspj3 (%build)
-
-RPM build errors:
-
-Bad exit status from /var/tmp/rpm-tmp.QUspj3 (%build)
-
-修改了编译参数，遇到了新的报错：
-
-CMake Error at
-/usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake:233
-(message):
-
-Could NOT find Threads (missing: Threads_FOUND)
-
-Call Stack (most recent call first):
-
-/usr/share/cmake/Modules/FindPackageHandleStandardArgs.cmake:603
-(\_FPHSA_FAILURE_MESSAGE)
-
-/usr/share/cmake/Modules/FindThreads.cmake:226
-(FIND_PACKAGE_HANDLE_STANDARD_ARGS)
-
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/openmp/runtime/cmake/config-ix.cmake:162
-(find_package)
-
-/home/rocky/rpmbuild/BUILD/llvm-project-20.1.8.src/openmp/runtime/CMakeLists.txt:279
-(include)
-
-将孙海勇的llvm.spec文件，与rocky的spec文件对比一下，看看需要怎么改进。
-
-还是有些难搞，要不要跳过？
+编译的时候遇到了很多报错，没有完全解决。
 
 最终解决方案：编译runtimes的时候，只编译compiler-rt,不编译openmp。对spec文件做了很多的改动，这里不一一介绍了。
 
-编译成功后，生成了如下的39个文件：
+编译成功后，生成了39个文件
 
-clang-libs-debuginfo-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
 
-llvm-static-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-clang-tools-extra-debuginfo-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-debuginfo-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-clang-libs-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-libs-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-libs-debuginfo-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-lldb-debuginfo-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-devel-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-clang-tools-extra-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-clang-devel-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-lld-libs-debuginfo-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-test-debuginfo-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-lldb-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-clang-devel-debuginfo-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-lldb-devel-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-lld-libs-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-devel-debuginfo-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-googletest-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-test-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-python3-lldb-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-clang-debuginfo-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-python3-lit-20.1.8-1.el10\~bootstrap.loongarch.noarch.rpm
-
-compiler-rt-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-clang-analyzer-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-python3-clang-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-clang-tools-extra-devel-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-lld-devel-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-git-clang-format-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-lld-debuginfo-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-clang-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-cmake-utils-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-clang-resource-filesystem-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-lld-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-doc-20.1.8-1.el10\~bootstrap.loongarch.noarch.rpm
-
-llvm-toolset-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-filesystem-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-llvm-debugsource-20.1.8-1.el10\~bootstrap.loongarch.loongarch64.rpm
-
-顺手编译一些包
-
-nano
-
-lsof
-
-execstack
+## execstack
 
 execstack不支持龙架构，后续需要进行架构适配。
 
-zstd
+## zstd
 
-liburing
+## liburing
 
-plocate
+## plocate
 
-下载rust和openjdk的Loongarch版。
 
-rust
+## rust
+下载rust的Loongarch版。
 
 从rust官网上下载rust
 1.88.0版本，loongarch64版本。解压缩后，放在/tools中。
 
-openjdk
+## openjdk
 
 从Loongnix.cn下载 jdk 25.0.2版本。解压缩后，放在/tools/中。
 
-tzdata
+## tzdata
 
 重新编译
 
-javapackges-tools
+## javapackges-tools
 
-lua-lunit
+## lua-lunit
 
-没有安装包
+没有源码包
 
-lua-posix
+## lua-posix
 
-没有安装包
+没有源码包
 
-copy-jdk-config
+## copy-jdk-config
 
-没有安装包
+没有源码包
 
-openjdk
+## openjdk
 
 先跳过这个大包，需要做好准备再搞这个大家伙。
 
-future
+## future
 
-找不到安装包
+没有源码包
 
-python-commonmark
+## python-commonmark
 
-找不到安装包
+没有源码包
+## python-recommonmark
 
-python-recommonmark
+没有源码包
 
-找不到安装包
+## rust-srpm-macros
 
-rust-srpm-macros
+没有源码包
 
-找不到安装包
-
-rust
+## rust
 
 失败。缺少libclang_rt.profile.a。注释掉相关的语句后，依然卡死在
 
@@ -6149,35 +5684,35 @@ generic-array(build), typenum(build)
 
 不知道为什么会这样。先跳过。
 
-循环构建脚本
+## 循环构建脚本
 
 已经复制，未测试。
 
-Perl家族类软件包
+## Perl家族类软件包
 
 先跳过
 
-Python家族类软件包
+## Python家族类软件包
 
 先跳过
 
-wayland
+## wayland
 
 不需要特殊处理，直接编译即可。
 
-wayland-protocols
+## wayland-protocols
 
 正常编译。
 
-hwdata
+## hwdata
 
 正常编译。
 
-pciutils
+## pciutils
 
 依赖hwdata
 
-libpciaccess
+## libpciaccess
 
 正常编译。
 
