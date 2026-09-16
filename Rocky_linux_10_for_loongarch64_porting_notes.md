@@ -2,17 +2,13 @@
 
 Rocky Linux是一个基于RHEL源码重新编译的、与RHEL二进制兼容的操作系统。在CentOS变成滚动发行版以后，Rocky Linux就是CentOS的替代操作系统。
 
-Rocky Linux 10.0发布于2025年6月11日，10.1发布于2025年11月25日， 10.2发布于2026年5月28日。操作系统中的编译器、内核、glibc等工具链版本均比较新，应该可以很方便的移植到龙架构上。
+Rocky Linux 10.0发布于2025年6月11日，10.1发布于2025年11月25日， 10.2发布于2026年5月28日。操作系统中的编译器、内核、glibc等工具链版本均比较新，应该可以很方便的移植到龙架构上:
 
--   GCC 14.3
-
--   glibc 2.39
-
--   Annobin 12.99
-
--   binutils 2.41
-
--   kernel 6.12.0.
+- GCC 14.3
+- glibc 2.39
+- Annobin 12.99
+- binutils 2.41
+- kernel 6.12.0.
 
 我想学习龙架构操作系统的移植，参考孙海勇的《用"芯"探索：教你构建龙芯平台的Linux系统》，开始操作系统的移植。
 
@@ -29,9 +25,9 @@ Rocky Linux 10.1中工具链的版本基线，已经高于了国内各大操作�
 首先，搭建系统环境。仿照孙老师的书，在Debian 系统下，需要安装一些必要的软件
 
 ```bash
-sudo apt Install build-essential rpm librpm-dev git python3-dev dnf texinfo \
-  zlib-dev gettext gettext-base libgettextp0-dev tcl libncurses-dev bc \
-  wget meson ninja-build gperf help2man libssl-dev
+sudo apt install build-essential rpm librpm-dev git python3-dev dnf texinfo \
+    zlib-dev gettext gettext-base libgettextp0-dev tcl libncurses-dev bc \
+    wget meson ninja-build gperf help2man libssl-dev
 ```  
 
 下载Rock Linux 10.1的源码包。
@@ -51,9 +47,9 @@ sudo apt Install build-essential rpm librpm-dev git python3-dev dnf texinfo \
 
 我准备跳过这个步骤，直接使用原生的系统，但新建一个用户来做这个事情。
 ```bash
- groupadd rocky                                                                     
- useradd -s /bin/bash -g rocky -m -k /dev/null rocky                 
- usermod -a -G sudo rocky                                              
+groupadd rocky                                                                     
+useradd -s /bin/bash -g rocky -m -k /dev/null rocky                 
+usermod -a -G sudo rocky                                              
 ```
 Debian系统下，没有wheel组，与之等价的是sudo组。
 
@@ -68,13 +64,13 @@ passwd rocky
 
 创建必要的文件夹
 ```bash
- mkdir -p rocky_loong64/                                             
- cd rocky_loong64                                                     
- mkdsir sources build tools cross-tools                               
- ln -sv /home/rocky/rocky_loong64/tools /                             
- ln -sv /home/rocky/rocky_loong64/cross-tools /                        
- mkdir -pv /tools/lib /tools/lib64 /tools/include   
- ```                   
+mkdir -p rocky_loong64/                                             
+cd rocky_loong64                                                     
+mkdsir sources build tools cross-tools                               
+ln -sv /home/rocky/rocky_loong64/tools /                             
+ln -sv /home/rocky/rocky_loong64/cross-tools /                        
+mkdir -pv /tools/lib /tools/lib64 /tools/include   
+```                   
 
 **注意**：必须手动创建`/tools/lib`文件夹，因为后续编译的gcc的一个library搜索路径设置为`/home/rocky/rocky_loong64/tools/lib/../lib64/`，如果没有`/tools/lib`,那么就不能按照相对路径找到`../lib64`。
 
@@ -95,13 +91,13 @@ passwd rocky
 |  CROSS_BUILD         |  x86_64-unkown-linux-gnu    |   loongarch64-debian-linux-gnu      |
 |  CROSS_TARGET        | mips64el-unknown-linux-gnu  |  loongarch64-unknown-linux-gnu      |
 
-/cross-tools中的文件，运行在交叉编译平台上。对于x86_64平台来说，CROSS_HOST为x86_64-cross-linnux-gnu
+/cross-tools中的文件，运行在交叉编译平台上。对于x86_64平台来说，CROSS_HOST为x86_64-cross-linux-gnu
 
 设置`~/.bash_profile`, `~/.bashrc`,具体的内容可以参考[脚本](scripts/cross/prepare-cross-chain.sh)
 
 将之前下载的source rpms包，全部放在一个文件夹里
 ```bash
-  find ./ -name *.rpm |xargs mv -v -t ~/rocky_loong64/sources/
+find ./ -name *.rpm |xargs mv -v -t ~/rocky_loong64/sources/
 ```
 # 构建过程简介
 
@@ -298,13 +294,13 @@ glibc 2.39中，移除了crypt支持，因此需要额外的编译libxcrypt。
 
 好了，找到了问题补丁`glibc-RHEL-101754-2.patch`！
 
-解决方案，不打Patch 261这个补丁。需要看一看这个补丁干了什么。
+根据补丁的内容，龙架构可能是需要补充一个 `dl-tunables.list`文件。
 
-可以确定的是，这个补丁确实跟龙架构无关。换句话说，龙架构可能是需要补充一个 `dl-tunables.list`文件。
+解决方案，不打Patch 261这个补丁。需要看一看这个补丁干了什么。
 
 编译完成后，检查：libc库位于/tools/lib64中，用file命令进行查看。
 
-```text
+```bash
 file /tools/lib64/libc.so.6 
 /tools/lib64/libc.so.6: ELF 64-bit LSB shared object, LoongArch, version 1 (GNU/Linux), dynamically linked, interpreter /tools/lib64/ld-linux-loongarch-lp64d.so.1, for GNU/Linux 5.19.0, with debug_info, not stripped
 ```
@@ -441,96 +437,6 @@ pkg-config is /cross-tools/bin/pkg-config
 
 Rocky Linux中自带的grub版本为2.12, 对龙架构的支持还不够完善，改用了grub 2.14的源码进行编译。 不过，测试后结果还是很糟糕：
 ```text
-ERROR: erofs_test
-ERROR: ext234_test
-PASS: squashfs_test
-PASS: iso9660_test
-ERROR: hfsplus_test
-ERROR: ntfs_test
-ERROR: reiserfs_test
-ERROR: fat_test
-ERROR: minixfs_test
-ERROR: xfs_test
-ERROR: f2fs_test
-ERROR: nilfs2_test
-ERROR: romfs_test
-ERROR: exfat_test
-PASS: tar_test
-ERROR: udf_test
-ERROR: hfs_test
-ERROR: jfs_test
-ERROR: btrfs_test
-ERROR: zfs_test
-ERROR: zfs_zstd_test
-PASS: cpio_test
-PASS: example_scripted_test
-PASS: gettext_strings_test
-PASS: grub_script_blanklines
-PASS: grub_script_final_semicolon
-PASS: grub_script_dollar
-PASS: grub_script_no_commands
-PASS: syslinux_test
-ERROR: luks1_test
-ERROR: luks2_test
-SKIP: pata_test
-SKIP: ahci_test
-SKIP: uhci_test
-SKIP: ohci_test
-SKIP: ehci_test
-FAIL: example_grub_script_test
-FAIL: grub_script_eval
-FAIL: grub_script_test
-FAIL: grub_script_echo1
-FAIL: grub_script_leading_whitespace
-FAIL: grub_script_echo_keywords
-FAIL: grub_script_vars1
-FAIL: grub_script_for1
-FAIL: grub_script_while1
-FAIL: grub_script_if
-FAIL: grub_script_comments
-FAIL: grub_script_functions
-FAIL: grub_script_break
-FAIL: grub_script_continue
-FAIL: grub_script_shift
-FAIL: grub_script_blockarg
-FAIL: grub_script_setparams
-FAIL: grub_script_return
-ERROR: grub_cmd_cryptomount
-FAIL: grub_cmd_regexp
-FAIL: grub_cmd_date
-FAIL: grub_cmd_set_date
-FAIL: grub_cmd_sleep
-PASS: grub_script_expansion
-FAIL: grub_script_not
-PASS: partmap_test
-FAIL: hddboot_test
-SKIP: fddboot_test
-FAIL: cdboot_test
-SKIP: netboot_test
-ERROR: serial_test
-SKIP: pseries_test
-FAIL: core_compress_test
-FAIL: xzcompress_test
-FAIL: gzcompress_test
-FAIL: lzocompress_test
-FAIL: grub_cmd_echo
-FAIL: help_test
-FAIL: grub_script_gettext
-FAIL: grub_script_escape_comma
-FAIL: grub_script_strcmp
-PASS: test_sha512sum
-FAIL: test_unset
-ERROR: grub_func_test
-FAIL: grub_cmd_tr
-FAIL: file_filter_test
-PASS: grub_cmd_test
-FAIL: asn1_test
-SKIP: tpm2_key_protector_test
-PASS: example_unit_test
-PASS: printf_test
-PASS: date_test
-PASS: priority_queue_unit_test
-PASS: cmp_test
 ============================================================================
 Testsuite summary for GRUB 2.14
 ============================================================================
@@ -547,8 +453,6 @@ Please report to bug-grub@gnu.org
 ```
 具体有哪些问题，不得而知，我也没有更多的时间去进行分析了。不过似乎这个grub还是可以用的。
 至此, 工具链编译全部完成，第一阶段结束！
-
-完成于2026年3月15日星期日凌晨0：08。
 
 # 构建临时系统
 
@@ -639,21 +543,21 @@ debug_info, not stripped
 ```bash
 %{gpgverify} --keyring=%{SOURCE2} --signature=%{SOURCE1} --data=%{SOURCE0} 
 ```
-gpgverify 这个宏暂时没有实现，跳过这个也没有关系。
+`gpgverify` 这个宏暂时没有实现，跳过这个也没有关系。
 
 检查：
 
-在/tools/lib64/下，存在libncurses.so, libncursesw.a
+在`/tools/lib64/`下，存在libncurses.so, libncursesw.a
 libncursesw.so等库文件。
 
-/tools/lib64/pkgconfig 目录下存在ncurses++w.pc，ncursesw.pc，ncurses.pc文件。
+`/tools/lib64/pkgconfig` 目录下存在ncurses++w.pc，ncursesw.pc，ncurses.pc文件。
 
 ## BZIP2 
 
-检查：/tools/bin下，存在bzip2，bunzip2, bcat, bzmore, bzless,
+检查：`/tools/bin`下，存在bzip2，bunzip2, bcat, bzmore, bzless,
 bzgrep等文件。
 
-在/tools/lib64下，存在 libbz2.so。
+在`/tools/lib64`下，存在 libbz2.so。
 
 ## XZ 
 
@@ -703,6 +607,7 @@ ls /tools/bin/openssl
 ```text
 /tools/bin/openssl
 ```
+检查：
 
 ```bash
 file /tools/bin/openssl
@@ -715,7 +620,7 @@ file /tools/bin/openssl
 /tools/lib64/ld-linux-loongarch-lp64d.so.1, for GNU/Linux 5.19.0, with
 debug_info, not stripped
 ```
-
+检查：
 ```bash
 ls /tools/lib64/libssl.*
 ```
@@ -771,8 +676,6 @@ ls /tools/lib64/libselinux.*
 
 nspr的源码在nss中。
 
-完成
-
 检查：
 ```bash
 ls /tools/lib64/{libnspr4.*,libplc*}
@@ -783,8 +686,6 @@ ls /tools/lib64/{libnspr4.*,libplc*}
 /tools/lib64/libplc4.so
 ```
 ## sqlite
-
-完成
 
 检查：
 ```bash
@@ -799,8 +700,6 @@ ls /tools/lib64/libsqlite3.*
 ## nss 
 
 需要添加 `NSS_DISABLE_DSA=1 NSS_ENABLE_ML_DSA=1`
-
-完成
 
 检查：
 ```bash
@@ -819,8 +718,6 @@ ls /tools/lib64/{libnss*,libsoft*}
 ```
 ## popt
 
-完成
-
 检查：
 ```bash
 ls /tools/lib64/libpopt.*
@@ -835,7 +732,7 @@ ls /tools/lib64/libpopt.*
 
 需要修改aclocal.m4和configure脚本，因为系统中的aclocal版本是1.18,不是1.16。
 
-我采用的方法是将这个修改写到编译脚本内。也可以尝试用`autoconf -fiv`个更新一下脚本。
+我采用的方法是将这个修改写到编译脚本内。也可以尝试用`autoconf -fiv` 更新一下脚本。
 
 检查：
 ```bash
@@ -855,7 +752,7 @@ rocky 10已经不提供libdb包了。不需要了。
 
 ## libcap
 
-注释掉gpgverify相关的语句。完成。
+注释掉gpgverify相关的语句。
 
 检查：
 ```bash
@@ -868,8 +765,6 @@ ls /tools/lib64/libcap.*
 /tools/lib64/libcap.so.2.69
 ```
 ## libmicrohttpd
-
-完成。
 
 检查：
 ```bash
@@ -1027,7 +922,7 @@ ls /tools/bin/{ls,cp,hostname,wc,tail,uniq}
 再一次遇到了gpgverify的问题。准备一劳永逸解决问题。
 
 安装`redhat-rpm-config-293`这个源码包，将gpgverify脚本放在
-`/usr/lib/rpm/redhat`,将`macros.fedora-misc`放在`/usr/lib/rpm/macros.d`。
+`/usr/lib/rpm/redhat`, 将`macros.fedora-misc`放在`/usr/lib/rpm/macros.d`。
 
 gpgverify脚本需要gpgv2，简单做个符号链接：
 ```bash
@@ -1040,7 +935,7 @@ ls /tools/bin/file
 ```
 
 输出：
-```text
+```text 
 /tools/bin/file
 ```
 ## findutils
@@ -1804,15 +1699,15 @@ ls /tools/bin/login
 
 需要内置的内核，包括
 
--   CONFIG_VIRTIO_BLK=y
+- CONFIG_VIRTIO_BLK=y
 
--   CONFIG_SCSI_VIRTIO=y
+- CONFIG_SCSI_VIRTIO=y
 
--   CONFIG_HW_RANDOM_VIRTIO=y
+- CONFIG_HW_RANDOM_VIRTIO=y
 
--   CONFIG_DRM_VIRTIO_GPU=y
+- CONFIG_DRM_VIRTIO_GPU=y
 
-    在make menuconfig界面，善于使用"/"来搜索模块。
+    在`make menuconfig`界面，善于使用"/"来搜索模块。
 
   最终使用的配置文件在[这里](sources/config-6.17.11)。
 ## grub
@@ -1824,7 +1719,6 @@ ls /tools/bin/login
 ```bash
 ls /tools/bin/grub-*
 ```
-
 
 输出：
 ```text
@@ -4873,34 +4767,15 @@ Couldn't find include 'GObject-2.0.gir' (search path: '['/usr/share/gir-1.0', '/
 
 重新编译的glib2，补全了很多文件，重要的是补全了`/usr/share/gir-1.0/GObject-2.0.gir`。
 
+## 可以简单编译的软件包
 
-## perl-error
-
-正常编译即可。
-
-## perl-termreadkey
-
-正常编译即可。
-
-## xorg-x11-xauth
-
-正常编译即可。
-
-## libusbx
-
-找不到安装包。
-
-## hidapi
-
-找不到安装包。
-
-## libcbor
-
-正常编译即可。
-
-## libfido2
-
-将所有的依赖关系都补全了，编译很顺利。
+- perl-error
+- perl-termreadkey
+- xorg-x11-xauth
+- ~~libusbx~~ (无源码包)
+- ~~hidapi~~ (无源码包)
+- libcbor
+- libfido2
 
 ## openssh
 
@@ -5345,7 +5220,6 @@ rpm-plugin-dbus-announce-4.19.1.1-20.el10~bootstrap.loongarch.loongarch64
 ```bash
 QA_RPATHS=$(( 0x0001)) rpmbuild --rebuild /opt/srpms/Packages/gpgme-1.23.2-6.el10.src.rpm --without qt5 --without qt6
 ```
-
 ## patchutils
 
 直接编译安装即可。
@@ -5354,25 +5228,12 @@ QA_RPATHS=$(( 0x0001)) rpmbuild --rebuild /opt/srpms/Packages/gpgme-1.23.2-6.el1
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/check-0.15.2-17.el10.src.rpm --nodeps 
 ```
-
-## python-charset-normalizer
-
-正常编译安装。
-
-## python-idna
-
-正常编译安装。
-
-## python-urllib3
-
-正常编译安装。
-
-## python-requests
-
-正常编译安装。
-
-## pyxattr
-正常编译安装。
+## 可以简单编译的软件包
+- python-charset-normalizer
+- python-idna
+- python-urllib3
+- python-requests
+- pyxattr
 
 ## librepo
 
@@ -5476,17 +5337,10 @@ error: lua script failed: [string "forgemeta"]:2: module 'fedora.common' not fou
 
 重新安装redhat-rpm-config后，可以正常编译安装。
 
-## libtar
-
-没有源码包。
-
-## satyr
-
-没有源码包。
-
-## libmodman
-
-没有源码包。
+## 不需要编译的软件包(无源码包)
+- libtar
+- satyr
+- libmodman
 
 ## gsettings-desktop-schemas
 
@@ -5524,22 +5378,6 @@ error: lua script failed: [string "forgemeta"]:2: module 'fedora.common' not fou
 rpmbuild --rebuild /opt/srpms/Packages/ostree-2025.6-1.el10.src.rpm --nodeps
 ```
 **注意**：没有安装ostree-grub2。
-
-## python-wheel
-
-已经安装
-
-## python-pip
-
-已经安装。
-
-## python-six
-
-已经安装
-
-## python-setuptools_scm
-
-已经安装
 
 ## python-Dateutil
 
@@ -5599,6 +5437,7 @@ export PS1='[\u@\h \W]\$ '
 尽量给llvm补全依赖
 
 ## python-ptyprocess
+正常编译即可。
 
 ## zsh
 ```bash
@@ -5614,17 +5453,18 @@ rpmbuild --rebuild /opt/srpms/Packages/zsh-5.9-15.el10.src.rpm --nodeps --nochec
 
 编译成功后，生成了39个文件
 
-
 ## execstack
 
 execstack不支持龙架构，后续需要进行架构适配。
 
 ## zstd
+正常编译即可。
 
 ## liburing
+正常编译即可。
 
 ## plocate
-
+正常编译即可。
 
 ## rust
 下载rust的Loongarch版。
@@ -5642,45 +5482,30 @@ execstack不支持龙架构，后续需要进行架构适配。
 
 ## javapackges-tools
 
-## lua-lunit
-
-没有源码包
-
-## lua-posix
-
-没有源码包
-
-## copy-jdk-config
-
-没有源码包
+## 不需要编译的软件包(无源码包)
+- lua-lunit
+- lua-posix
+- copy-jdk-config
 
 ## openjdk
 
 先跳过这个大包，需要做好准备再搞这个大家伙。
 
-## future
+## 不需要编译的软件包（无源码包）
 
-没有源码包
-
-## python-commonmark
-
-没有源码包
-## python-recommonmark
-
-没有源码包
-
-## rust-srpm-macros
-
-没有源码包
+- future
+- python-commonmark
+- python-recommonmark
+- rust-srpm-macros
 
 ## rust
 
 失败。缺少libclang_rt.profile.a。注释掉相关的语句后，依然卡死在
 
+```text
 compiling cc v1.2.17
-
-Building \[=\> \] 9/85: libc(build), proc-macro2(build),
-generic-array(build), typenum(build)
+Building [=>                          ] 9/85: libc(build), proc-macro2(build), generic-array(build), typenum(build)  
+```
 
 不知道为什么会这样。先跳过。
 
@@ -5696,134 +5521,62 @@ generic-array(build), typenum(build)
 
 先跳过
 
-## wayland
+## 一批可以简单编译的软件包
+- wayland
+- wayland-protocols
+- hwdata
+- pciutils
+- libpciaccess
+- libdrm
+- vulkan-header
+- libxxf86vm
+- libXrandr
+- libXdamage
+- libxshmfence
+- ~~libomxil-bellagio~~(找不到源码包)
+- libglvnd
+- libvdpau
+- libva
+- opencl-filesystem
+- opencl-headers
+- ocl-icd
+- vulkan-loader
+- spirv-headers
+- glslang
+- python-ply
+- python3-pycparser
+- mesa
+- xcb-util
+- xcb-util-image
+- xcb-util-renderutil
+- xcb-util-cursor
+- xcb-util-keysyms
+- xcb-util-wm
+- libfontenc
+- xorg-x11-font-utils
+- libXfont2
+- libXres
+- libXv
+- libdmx (找不到源码包)
+- libepoxy
+- eglexternalplatform
+- egl-wayland
+- lapack
+- openblas-srpm-macros
 
-不需要特殊处理，直接编译即可。
-
-## wayland-protocols
-
-正常编译。
-
-## hwdata
-
-正常编译。
-
-## pciutils
-
-依赖hwdata
-
-## libpciaccess
-
-正常编译。
-
-libdrm
-
-依赖pciaccess, 需要编译libpciaccess
-
-其他的不需要修改。
-
-vulkan-header
-
-正常编译。
-
-libxxf86vm
-
-正常编译。
-
-libXrandr
-
-正常编译。
-
-libXdamage
-
-正常编译。
-
-libxshmfence
-
-正常编译。
-
-libomxil-bellagio
-
-找不到了
-
-libglvnd
-
-libvdpau
-
-libva
-
-opencl-filesystem
-
-opencl-headers
-
-ocl-icd
-
-vulkan-loader
-
-spirv-headers-
-
-glslang
-
-python-ply
-
-python3-pycparser
-
-mesa
-
-xcb-util
-
-xcb-util-image
-
-xcb-util-renderutil
-
-xcb-util-cursor
-
-xcb-util-keysyms
-
-xcb-util-wm
-
-libfontenc
-
-xorg-x11-font-utils
-
-libXfont2
-
-libXres
-
-libXv
-
-libdmx
-
-找不到安装包
-
-libepoxy
-
-eglexternalplatform
-
-egl-wayland
-
-lapack
-
-openblas-srpm-macros
-
-openblas
+## openblas
 
 在ExclusiveArch中添加loongarch64.
-
-TEST 105/109 potrf:smoketest_trivial \[FAIL\]
-
-ERR: test_potrs.c:535 U s(0,0) difference: 1.19209e-07
-
-TEST 106/109 potrf:bug_695 \[OK\]
-
-TEST 107/109 kernel_regress:skx_avx \[OK\]
-
-TEST 108/109 fork:safety \[OK\]
-
-TEST 109/109 fork:safety_after_fork_in_parent \[OK\]
-
+构建过程中，在测试时遇到这样的报错：
+```text
+TEST 105/109 potrf:smoketest_trivial [FAIL]
+  ERR: test_potrs.c:535  U s(0,0) difference: 1.19209e-07
+TEST 106/109 potrf:bug_695 [OK]
+TEST 107/109 kernel_regress:skx_avx [OK]
+TEST 108/109 fork:safety [OK]
+TEST 109/109 fork:safety_after_fork_in_parent [OK]
 RESULTS: 109 tests (108 ok, 1 failed, 0 skipped) ran in 293 ms
-
+```
 问题解决方案：
 
 <https://blog.csdn.net/gitblog_00861/article/details/151479368>
@@ -5832,186 +5585,109 @@ RESULTS: 109 tests (108 ok, 1 failed, 0 skipped) ran in 293 ms
 
 暂时先不测试，跳过这个问题。
 
-只知道是编译器的问题。今天就到这里了。暴力规避一下这个问题吧！
+只知道是编译器的问题。暂时先放下这个包。
 
-暴力规避未果。暂时先放下这个包。
+## numpy
+正常编译即可。
 
-numpy
-
-cython
-
-依赖python-numpy, 想办法补全。
-
-编译完成后，安装的时候才发现这个包早就编过了。
-
-python-lxml
-
-已经编译过了。
-
-javapackges-tools
-
-已经编译过了
-
-snappy
+## snappy
 
 正常编译即可。
 
-wget
+## wget
 
-rpmbuild \--rebuild /opt/srpms/Packages/wget-1.24.5-5.el10.src.rpm
-\--nodeps \--nocheck
+编译脚本
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/wget-1.24.5-5.el10.src.rpm --nodeps --nocheck
+```
 
-crash
+## crash
 
 依赖snappy, wget且需要修改为支持龙架构。
 
-avahi
+## avahi
+编译脚本
+```bash
+rpmbuild  -D "version_no_tilde 0.9-rc2" -bb ~/rpmbuild/SPECS/avahi.spec
+```
+## libdaemon
+正常编译即可
 
-rpmbuild -D \"version_no_tilde 0.9-rc2\" -bb
-\~/rpmbuild/SPECS/avahi.spec
-
-libdaemon
-
-dyninstall
+## dyninstall
 
 需要添加龙架构支持 未完成安装
 
-xmltoman
+## xmltoman
+正常编译即可
 
-systemtap
-
-staplog.c:50:2: error: invalid preprocessing directive #warn; did you
-mean #warning?
-
-50 \| #warn \"unknown architecture for crash/staplog support\"
-
+## systemtap
+编译的过程中遇到报错：
+```text
+staplog.c:50:2: error: invalid preprocessing directive #warn; did you mean #warning?
+   50 | #warn "unknown architecture for crash/staplog support"
+```
 需要修改代码，以支持loongarch64。增加一个patch。
 
-编译脚本
+编译脚本:
+```bash
+rpmbuild -ba -D "with_dyninst 0"  -D "with_java 0" -D "with_virthost 0" rpmbuild/SPECS/systemtap.spec --nodeps
+```
+## 可以简单编译的软件包
+- yelp-xsl
+- ~~ atk~~(没有源码包)
+- fribidi
+- libdatrie
+- libthai
+- babel（提供了python-babel）
+- cups
+- libexif
 
-rpmbuild -ba -D \"with_dyninst 0\" -D \"with_java 0\" -D \"with_virthost
-0\" rpmbuild/SPECS/systemtap.spec \--nodeps
+## libcupsfilter
+```bash
+rpmbuild --rebuild /opt/srpms/Packages/libcupsfilters-2.0.0-11.el10.src.rpm  --nodeps --nocheck
+```
 
-yelp-xsl
+## 可以简单编译的软件包
+- libppd
+- cups-filter
+- python-imagesize
+- python-sphinx-theme-alabaster
 
-正常编译即可。
+## python-sphinx
 
-mallard-rng
-
-已经编译过了。
-
-yelp-tools
-
-已经编译了
-
-gtk-doc
-
-已经编译了
-
-atk
-
-没有安装包了
-
-fribidi
-
-正常编译即可
-
-libdatrie
-
-正常编译即可
-
-libthai
-
-正常编译即可
-
-babel
-
-正常编译即可。提供了python-babel
-
-cups
-
-libexif
-
-正常编译即可
-
-libcupsfilter
-
-rpmbuild \--rebuild
-/opt/srpms/Packages/libcupsfilters-2.0.0-11.el10.src.rpm \--nodeps
-\--nocheck
-
-libppd
-
-正常编译
-
-cups-filter
-
-依赖libexif, libcupsfilter
-
-python-imagesize
-
-python-sphinx-theme-alabaster
-
-python-sphinx
-
-TZ=UTC rpmbuild \--rebuild
-/opt/srpms/Packages/python-sphinx-7.2.6-10.el10.src.rpm \--nodeps
-\--nocheck
-
+编译脚本：
+```bash
+TZ=UTC rpmbuild  --rebuild /opt/srpms/Packages/python-sphinx-7.2.6-10.el10.src.rpm --nodeps --nocheck
+```
 注意需要用TZ=UTC
 
-xdg-utils
+## xdg-utils
+  正常编译即可
 
-latexmk
+## latexmk
+  正常编译即可
+  
+## gi-docgen
 
-gi-docgen
-
-依赖sphinx
-
-TZ=UTC rpmbuild \--rebuild
-/opt/srpms/Packages/gi-docgen-2023.3-10.el10.src.rpm \--nodeps
-\--nocheck
-
-harfbuz
+依赖sphinx。编译脚本：
+```bash
+TZ=UTC rpmbuild --rebuild /opt/srpms/Packages/gi-docgen-2023.3-10.el10.src.rpm --nodeps --nocheck
+```
+## harfbuz
 
 之前编译过一次，但编译的不全，再重新编译一遍。
 
-python-typogrify
+## 可以简单编译的软件包
+- python-typogrify
+- python-smartypants
+- pango
+- libXcursor
+- ~~gl-manpages~~（找不到源码包）
+- mesa-libGLU
+- freeglut
+- jasper
+- gdk-pixbuf2
 
-python-smartypants
-
-pango
-
-依赖gi-docgen。
-
-libXcursor
-
-正常编译即可。
-
-share-mime-info
-
-已经编译过了
-
-gl-manpages
-
-找不到安装包。
-
-mesa-libGLU
-
-正常编译即可
-
-freeglut
-
-正常编译即可
-
-jasper
-
-正常编译即可
-
-gdk-pixbuf2
-
-依赖gi-docgen
-
-librsvg2
+## librsvg2
 
 依赖gi-docgen, 依赖rust-toolset。需要补全rust。暂时跳过
