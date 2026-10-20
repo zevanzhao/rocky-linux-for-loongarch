@@ -28,7 +28,7 @@ Rocky Linux 10.1中工具链的版本基线，已经高于了国内各大操作�
 sudo apt install build-essential rpm librpm-dev git python3-dev dnf texinfo \
     zlib-dev gettext gettext-base libgettextp0-dev tcl libncurses-dev bc \
     wget meson ninja-build gperf help2man libssl-dev
-```  
+```
 
 下载Rock Linux 10.1的源码包。
 
@@ -36,9 +36,9 @@ sudo apt install build-essential rpm librpm-dev git python3-dev dnf texinfo \
 
 ```bash
  #!/bin/bash
- rsync -r --progress --delete --update rsync://mirror.nju.edu.cn/rocky/10.1/BaseOS/source/tree/ BaseOS      
- rsync -r --progress --delete --update rsync://mirror.nju.edu.cn/rocky/10.1/AppStream/source/tree/ AppStream 
- rsync -r --progress --delete --update rsync://mirror.nju.edu.cn/rocky/10.1/devel/source/tree/ devel         
+ rsync -r --progress --delete --update rsync://mirror.nju.edu.cn/rocky/10.1/BaseOS/source/tree/ BaseOS
+ rsync -r --progress --delete --update rsync://mirror.nju.edu.cn/rocky/10.1/AppStream/source/tree/ AppStream
+ rsync -r --progress --delete --update rsync://mirror.nju.edu.cn/rocky/10.1/devel/source/tree/ devel
 ```
 
 实际上只下载devel中的包应该就足够了。源码大小24GB。
@@ -47,9 +47,9 @@ sudo apt install build-essential rpm librpm-dev git python3-dev dnf texinfo \
 
 我准备跳过这个步骤，直接使用原生的系统，但新建一个用户来做这个事情。
 ```bash
-groupadd rocky                                                                     
-useradd -s /bin/bash -g rocky -m -k /dev/null rocky                 
-usermod -a -G sudo rocky                                              
+groupadd rocky
+useradd -s /bin/bash -g rocky -m -k /dev/null rocky
+usermod -a -G sudo rocky
 ```
 Debian系统下，没有wheel组，与之等价的是sudo组。
 
@@ -64,13 +64,13 @@ passwd rocky
 
 创建必要的文件夹
 ```bash
-mkdir -p rocky_loong64/                                             
-cd rocky_loong64                                                     
-mkdsir sources build tools cross-tools                               
-ln -sv /home/rocky/rocky_loong64/tools /                             
-ln -sv /home/rocky/rocky_loong64/cross-tools /                        
-mkdir -pv /tools/lib /tools/lib64 /tools/include   
-```                   
+mkdir -p rocky_loong64/
+cd rocky_loong64
+mkdsir sources build tools cross-tools
+ln -sv /home/rocky/rocky_loong64/tools /
+ln -sv /home/rocky/rocky_loong64/cross-tools /
+mkdir -pv /tools/lib /tools/lib64 /tools/include
+```
 
 **注意**：必须手动创建`/tools/lib`文件夹，因为后续编译的gcc的一个library搜索路径设置为`/home/rocky/rocky_loong64/tools/lib/../lib64/`，如果没有`/tools/lib`,那么就不能按照相对路径找到`../lib64`。
 
@@ -85,6 +85,7 @@ mkdir -pv /tools/lib /tools/lib64 /tools/include
 `CROSS_TARGET`即工具链所生成的二进制程序所要运行的平台。
 
 以两种情况举例
+
 |                      |   X86平台上，交叉编译MIPS   |   Loongarch上，"交叉"编译loongarch64|
 |----------------------| ----------------------------| ------------------------------------|
 |  CROSS_HOST          | x86_64-cross-linux-gnu      |  loongarch64-cross-linux-gnu        |
@@ -99,6 +100,7 @@ mkdir -pv /tools/lib /tools/lib64 /tools/include
 ```bash
 find ./ -name *.rpm |xargs mv -v -t ~/rocky_loong64/sources/
 ```
+
 # 构建过程简介
 
 Rocky Linux 操作系统的移植，可以简单分为三个阶段，分别是工具链的编译、临时操作系统的编译、含有包管理系统的操作系统的编译。其中第三个阶段还可以分为两个子阶段：bootstrap阶段和完整编译阶段。
@@ -113,7 +115,7 @@ Rocky Linux 操作系统的移植，可以简单分为三个阶段，分别是�
 
 # 构建交叉工具链
 
-接下来，开始构建独立的工具链。 
+接下来，开始构建独立的工具链。
 
 虽然不需要交叉编译，但构建一个独立的、标准的工具链，仍然必要的。这样可以避免因为使用了主系统中的工具链，而带来各种奇奇怪怪的问题。
 
@@ -131,12 +133,12 @@ make ARCH=loongarch headers
 find usr/include -name “.*” -delete
 rm usr/include/Makefile
 mkdir -pv /tools/include
-cp -rv usr/include/* /tools/include                                 
+cp -rv usr/include/* /tools/include
 ```
 
 ## binutils交叉工具
 
-由于我这里并没有使用fedora系统，运行rpmbuild的时候需要添加\--nodeps参数。
+由于我这里并没有使用fedora系统，运行rpmbuild的时候需要添加--nodeps参数。
 
 ```bash
 rpmbuild -bp rpmbuild/SPECS/binutils.spec --nodeps
@@ -145,7 +147,7 @@ rpmbuild -bp rpmbuild/SPECS/binutils.spec --nodeps
 如果运行这个命令的时候，遇到这样的报错：
 ```text
 + sed -i -e s/%{release}/58.2/g bfd/Makefile{.am,.in}
-sed: can't read bfd/Makefile{.am,.in}: No such file or directory    
+sed: can't read bfd/Makefile{.am,.in}: No such file or directory
 ```
 说明你用的`sh`是`dash`,不是`bash`， **请确保`sh`指向`bash`**。
 
@@ -170,11 +172,11 @@ SEARCH_DIR("=/cross-tools/loongarch64-unknown-linux-gnu/lib64"); SEARCH_DIR("/to
 
 检查：在`/cross-tools/lib`中，生成了`libgmp.so`, `libgmpxx.so`等文件。
 
-## MPFR 
+## MPFR
 
 检查：在`/cross-tools/lib`中，生成的文件有`libmpfr.so`
 
-## libmpc 
+## libmpc
 
 检查：在`/cross-tools/lib`中，生成的文件有`libmpc.so`
 
@@ -184,11 +186,12 @@ Rock Linux 10没有提供ISL源码包，但在gcc中有is 0.24的源码。从这
 
 检查：在`/cross-tools/lib`中，生成的文件有`libisl.so`
 
-## CLooG 
+## CLooG
 
 Rock Linux 10 没有提供CLooG源码包，应该是不需要了。
 
 ## GCC-PASS1
+
 第一次编译GCC。
 
 直接运行`rpmbuild -bp rpmbuild/SPECS/gcc.spec`时，报错：
@@ -214,14 +217,14 @@ if posix.access ("/sbin/ldconfig", "x") then
     posix.exec ("/sbin/ldconfig")
   elseif pid ~= -1 then
     posix.wait (pid)
-  end                                                                   
+  end
 ```
 
 接下来，修改GCC的源码，将库的搜索路径，从默认的`/lib/`等修改为`/tools/lib/`
 
 分成两部分进行修改
 
-1.  修改/lib
+1. 修改/lib
 
 ```bash
 for file in $(find gcc/config -name linux64.h -o -name linux.h -o -name sysv4.h)
@@ -235,7 +238,7 @@ sed -i.orig 's@"\/lib" ABI_GRLEN_SPEC "\/ld-linux-loongarch-" ABI_SPEC "\.so\.1"
 ```
 注意，上述修改的目的之一，是确保DYNAMIC_LINKER采用`/tools/lib*`/中的`ld-*.so`。但是，对于龙架构，关于DYNAMIC_LINKER相关的定义在`gcc/config/loongarch/gnu-user.h`文件中，因此在上述sed脚本中，应该添加修改gnu-user.h文件的语句。
 
-2.  修改`STANDARD_STARTFILE_PREFIX_*`宏
+2. 修改`STANDARD_STARTFILE_PREFIX_*`宏
 
     需要修改`gcc/gcc.cc`文件和`gcc/config/loongarch/linux.h`
 
@@ -246,8 +249,8 @@ sed -i.orig 's@"\/lib" ABI_GRLEN_SPEC "\/ld-linux-loongarch-" ABI_SPEC "\.so\.1"
 #define STANDARD_STARTFILE_PREFIX_1 "/tools/" ABI_LIBDIR "/"
 #define STANDARD_STARTFILE_PREFIX_2 ""
 ```
-3.  configure,编译。
- 
+3. configure,编译。
+
  这里是具体的编译[脚本](scripts/cross/build-cross-gcc-pass1.sh)。 此时的gcc,无法编译出可以正常运行的可执行程序，只能编译库。
 
     编译的时候使用了`--disable-shared` 选项，所以生成了libgcc.a，没有libgcc.so文件。
@@ -279,7 +282,6 @@ glibc 2.39中，移除了crypt支持，因此需要额外的编译libxcrypt。
 
 经过确认，glibc 2.39 rpm包中的glibc-2.39.tar.xz与上游完全一致，但是Rocky Linux中的glibc打了420个补丁，问题肯定是来自其中某一个或者多个补丁。究竟是哪一个补丁带来的问题，尝试使用二分法进行确认。
 
-  
 |  步骤  |   操作        |         效果|     结论|
 |--------|---------------|-------------|---------|
 | 1      |  注释211～420   |      OK    |   |
@@ -301,7 +303,7 @@ glibc 2.39中，移除了crypt支持，因此需要额外的编译libxcrypt。
 编译完成后，检查：libc库位于/tools/lib64中，用file命令进行查看。
 
 ```bash
-file /tools/lib64/libc.so.6 
+file /tools/lib64/libc.so.6
 /tools/lib64/libc.so.6: ELF 64-bit LSB shared object, LoongArch, version 1 (GNU/Linux), dynamically linked, interpreter /tools/lib64/ld-linux-loongarch-lp64d.so.1, for GNU/Linux 5.19.0, with debug_info, not stripped
 ```
 
@@ -310,13 +312,13 @@ file /tools/lib64/libc.so.6
 
 注意：此时，可以编译locales了，不然后面无法设置locales为zh_CN.utf8。
 
-## GCC-PASS2 
+## GCC-PASS2
 
 第二次编译GCC。编译的时候，遇到了这样的问题：
 ```text
 /home/rocky/rpmbuild/BUILD/gcc-14.3.1-build/gcc-14.3.1-20250617/build/prev-loongarch64-unknown-linux-gnu/libstdc++-v3/include/ext/concurrence.h:252:32: error: cannot convert '<brace-enclosed initializer list>' to 'unsigned int' in initialization
   252 |     __gthread_cond_t _M_cond = __GTHREAD_COND_INIT;
-      |   
+      |
 ```
 
 经过一系列的检索，发现了有其他人遇到了类似的问题，解决方案是：
@@ -371,15 +373,15 @@ dynamically linked, interpreter
 /tools/lib64/ld-linux-loongarch-lp64d.so.1, for GNU/Linux 5.19.0, with
 debug_info, not stripped
 ```
-运行：` readelf -l a.out \|grep \"tools\"`
+运行：` readelf -l a.out |grep "tools"`
 
 输出
 ```text
-[Requesting program interpreter: /tools/lib64/ld-linux-loongarch-lp64d.so.1\]
+[Requesting program interpreter: /tools/lib64/ld-linux-loongarch-lp64d.so.1]
 ```
 运行 `grep -o "/tools/lib.*/crt.*succeeded" dummy.log`
 
-输出 
+输出
 ```text
 /tools/lib/../lib64/crti.o succeeded
 /tools/lib/../lib64/crtn.o succeeded
@@ -387,7 +389,7 @@ debug_info, not stripped
 
 文件查找路径：
 ```text
-grep -B1 "${SYSDIR}/.*/include" dummy.log 
+grep -B1 "${SYSDIR}/.*/include" dummy.log
 GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
 ignoring duplicate directory "/home/rocky/rocky_loong64/cross-tools/bin/../lib/gcc/../../lib/gcc/loongarch64-unknown-linux-gnu/14.3.1/include"
 ignoring duplicate directory "/home/rocky/rocky_loong64/cross-tools/bin/../lib/gcc/../../lib/gcc/loongarch64-unknown-linux-gnu/14.3.1/include-fixed"
@@ -403,12 +405,12 @@ ignoring duplicate directory "/home/rocky/rocky_loong64/tools/include"
 
 链接库文件的路径是否正确：
 ```text
-grep "SEARCH_DIR" dummy.log 
+grep "SEARCH_DIR" dummy.log
 SEARCH_DIR("=/cross-tools/loongarch64-unknown-linux-gnu/lib64"); SEARCH_DIR("/tools/lib64"); SEARCH_DIR("/tools/lib"); SEARCH_DIR("=/cross-tools/loongarch64-unknown-linux-gnu/lib");
 ```
 C库位置是否正确：
 ```text
-grep "libc.so.6" dummy.log 
+grep "libc.so.6" dummy.log
 attempt to open /home/rocky/rocky_loong64/tools/lib64/libc.so.6 succeeded
 /home/rocky/rocky_loong64/tools/lib64/libc.so.6
 ld-linux-loongarch-lp64d.so.1 needed by /home/rocky/rocky_loong64/tools/lib64/libc.so.6
@@ -416,7 +418,7 @@ ld-linux-loongarch-lp64d.so.1 needed by /home/rocky/rocky_loong64/tools/lib64/li
 
 ld库位置是否正确：
 ```text
-grep found dummy.log 
+grep found dummy.log
 found ld-linux-loongarch-lp64d.so.1 at /home/rocky/rocky_loong64/tools/lib64/ld-linux-loongarch-lp64d.so.1
 ```
 
@@ -424,7 +426,7 @@ found ld-linux-loongarch-lp64d.so.1 at /home/rocky/rocky_loong64/tools/lib64/ld-
 
 **切记! 切记! 切记**
 
-## pkgconf 
+## pkgconf
 
 正常编译完成。
 
@@ -433,6 +435,7 @@ found ld-linux-loongarch-lp64d.so.1 at /home/rocky/rocky_loong64/tools/lib64/ld-
 type pkg-config
 pkg-config is /cross-tools/bin/pkg-config
 ```
+
 ## grub
 
 Rocky Linux中自带的grub版本为2.12, 对龙架构的支持还不够完善，改用了grub 2.14的源码进行编译。 不过，测试后结果还是很糟糕：
@@ -440,6 +443,7 @@ Rocky Linux中自带的grub版本为2.12, 对龙架构的支持还不够完善�
 ============================================================================
 Testsuite summary for GRUB 2.14
 ============================================================================
+
 # TOTAL: 90
 # PASS:  20
 # SKIP:  9
@@ -458,7 +462,7 @@ Please report to bug-grub@gnu.org
 
 进入下一个环节，构建临时系统。这部分内容与LFS非常接近，只是将源码的来源限制为Rocky Linux的源码。
 
-## 制作环境设置 
+## 制作环境设置
 
 更新.bashrc，创建meson-cross.txt。可以参考这个[脚本](scripts/tmp/prepare-tmp-os.sh)
 
@@ -472,11 +476,11 @@ Please report to bug-grub@gnu.org
 
 检查：在/tools/lib64文件夹下，存在libmpfr.so, libmpfr.a文件
 
-## MPC 
+## MPC
 
 检查：在/tools/lib64文件夹下，存在libmpc.so, libmpc.a文件
 
-## ISL 
+## ISL
 
 ISL是gcc的一部分。
 
@@ -494,7 +498,7 @@ zlib 需要从这里下载
 
 检查：在/tools/lib64文件夹下，存在libz.so, libz.a文件
 
-## Binutils 
+## Binutils
 
 检查：/tools/bin目录下，存在ld, nm, as, ld-new等程序。
 
@@ -537,11 +541,12 @@ file /tools/bin/gcc
 /tools/lib64/ld-linux-loongarch-lp64d.so.1, for GNU/Linux 5.19.0, with
 debug_info, not stripped
 ```
+
 ## ncurses
 
 编译之前，修改SPEC文件，注释掉这一行:
 ```bash
-%{gpgverify} --keyring=%{SOURCE2} --signature=%{SOURCE1} --data=%{SOURCE0} 
+%{gpgverify} --keyring=%{SOURCE2} --signature=%{SOURCE1} --data=%{SOURCE0}
 ```
 `gpgverify` 这个宏暂时没有实现，跳过这个也没有关系。
 
@@ -552,21 +557,21 @@ libncursesw.so等库文件。
 
 `/tools/lib64/pkgconfig` 目录下存在ncurses++w.pc，ncursesw.pc，ncurses.pc文件。
 
-## BZIP2 
+## BZIP2
 
 检查：`/tools/bin`下，存在bzip2，bunzip2, bcat, bzmore, bzless,
 bzgrep等文件。
 
 在`/tools/lib64`下，存在 libbz2.so。
 
-## XZ 
+## XZ
 
 检查：
-```bash 
+```bash
 ls /tools/bin/xz* /tools/lib64/liblzma.*
 ```
 输出：
-```text 
+```text
 /tools/bin/xz /tools/bin/xzcmp /tools/bin/xzdiff /tools/bin/xzfgrep
 /tools/bin/xzless /tools/bin/xzcat /tools/bin/xzdec /tools/bin/xzegrep
 /tools/bin/xzgrep /tools/bin/xzmore
@@ -577,7 +582,7 @@ ls /tools/bin/xz* /tools/lib64/liblzma.*
 ## Readline
 
 检查：
-``` bash
+```bash
 ls /tools/lib64/libreadline.* /tools/lib64/libhistory.*
 ```
 输出：
@@ -587,6 +592,7 @@ ls /tools/lib64/libreadline.* /tools/lib64/libhistory.*
 /tools/lib64/libhistory.so /tools/lib64/libhistory.so.8.2
 /tools/lib64/libreadline.so /tools/lib64/libreadline.so.8.2
 ```
+
 ## OpenSSL
 
 编译openssl的时候，遇到了这个bug
@@ -628,6 +634,7 @@ ls /tools/lib64/libssl.*
 ```text
 /tools/lib64/libssl.a /tools/lib64/libssl.so /tools/lib64/libssl.so.
 ```
+
 ## pcre2
 
 注释掉spec文件中的gpgverify行。
@@ -645,6 +652,7 @@ ls /tools/lib64/libpcre2-*
 /tools/lib64/libpcre2-8.so /tools/lib64/libpcre2-posix.a
 /tools/lib64/libpcre2-posix.so.3
 ```
+
 ## libsepol
 
 检查：
@@ -656,7 +664,8 @@ ls /tools/lib64/libsepol.*
 /tools/lib64/libsepol.a /tools/lib64/libsepol.so
 /tools/lib64/libsepol.so.2
 ```
-## libselinux 
+
+## libselinux
 
 必须设置`PKG_CONFIG_PATH=/tools/lib64/pkgconfig USE_PCRE2=y`
 
@@ -672,6 +681,7 @@ ls /tools/lib64/libselinux.*
 /tools/lib64/libselinux.a /tools/lib64/libselinux.so
 /tools/lib64/libselinux.so.1
 ```
+
 ## nspr
 
 nspr的源码在nss中。
@@ -685,6 +695,7 @@ ls /tools/lib64/{libnspr4.*,libplc*}
 /tools/lib64/libnspr4.a /tools/lib64/libnspr4.so /tools/lib64/libplc4.a
 /tools/lib64/libplc4.so
 ```
+
 ## sqlite
 
 检查：
@@ -697,7 +708,8 @@ ls /tools/lib64/libsqlite3.*
 /tools/lib64/libsqlite3.so /tools/lib64/libsqlite3.so.0
 /tools/lib64/libsqlite3.so.0.8.6
 ```
-## nss 
+
+## nss
 
 需要添加 `NSS_DISABLE_DSA=1 NSS_ENABLE_ML_DSA=1`
 
@@ -716,6 +728,7 @@ ls /tools/lib64/{libnss*,libsoft*}
 /tools/lib64/libnss_db.so /tools/lib64/libnss_hesiod.so
 /tools/lib64/libnssdbm3.so
 ```
+
 ## popt
 
 检查：
@@ -728,6 +741,7 @@ ls /tools/lib64/libpopt.*
 /tools/lib64/libpopt.a /tools/lib64/libpopt.la /tools/lib64/libpopt.so
 /tools/lib64/libpopt.so.0 /tools/lib64/libpopt.so.0.0.2
 ```
+
 ## libarchive
 
 需要修改aclocal.m4和configure脚本，因为系统中的aclocal版本是1.18,不是1.16。
@@ -746,6 +760,7 @@ ls /tools/lib64/libarchive.*
 
 /tools/lib64/libarchive.la /tools/lib64/libarchive.so.13
 ```
+
 ## libdb
 
 rocky 10已经不提供libdb包了。不需要了。
@@ -764,6 +779,7 @@ ls /tools/lib64/libcap.*
 /tools/lib64/libcap.a /tools/lib64/libcap.so /tools/lib64/libcap.so.2
 /tools/lib64/libcap.so.2.69
 ```
+
 ## libmicrohttpd
 
 检查：
@@ -777,6 +793,7 @@ ls /tools/lib64/libmicrohttpd.*
 /tools/lib64/libmicrohttpd.so.12.62.0
 /tools/lib64/libmicrohttpd.la /tools/lib64/libmicrohttpd.so.12
 ```
+
 ## libpsl
 
 curl依赖libpsl,所以需要先编译psl。
@@ -792,7 +809,8 @@ ls /tools/lib64/libpsl.*
 /tools/lib64/libpsl.a /tools/lib64/libpsl.la /tools/lib64/libpsl.so
 /tools/lib64/libpsl.so.5 /tools/lib64/libpsl.so.5.3.5
 ```
-## curl 
+
+## curl
 
 注释掉%{gpgverify}相关语句
 
@@ -817,7 +835,8 @@ ls /tools/lib64/libcurl.*
 /tools/lib64/libcurl.a /tools/lib64/libcurl.la /tools/lib64/libcurl.so
 /tools/lib64/libcurl.so.4 /tools/lib64/libcurl.so.4.8.0
 ```
-## elfutils 
+
+## elfutils
 
 完成
 
@@ -833,6 +852,7 @@ ls /tools/lib64/{libelf*,libdw*}
 /tools/lib64/libdw.a /tools/lib64/libdw.so.1 /tools/lib64/libelf.a
 /tools/lib64/libelf.so.1
 ```
+
 ## lz4
 
 完成。
@@ -848,7 +868,8 @@ ls /tools/bin/lz4* /tools/lib64/liblz4*
 /tools/lib64/liblz4.so.1.9.4
 /tools/bin/lz4c /tools/lib64/liblz4.a /tools/lib64/liblz4.so.1
 ```
-## zstd 
+
+## zstd
 
 修改spec文件，%patchN 改为 %patch N
 
@@ -900,11 +921,13 @@ ls /tools/lib64/libexpat.*
 ```text
 /tools/bin/bash
 ```
-## bash-complete 
+
+## bash-complete
 
 完成
 
 ## coreutils
+
 完成
 
 检查：
@@ -917,6 +940,7 @@ ls /tools/bin/{ls,cp,hostname,wc,tail,uniq}
 /tools/bin/cp /tools/bin/hostname /tools/bin/ls /tools/bin/tail
 /tools/bin/uniq /tools/bin/wc
 ```
+
 ## file
 
 再一次遇到了gpgverify的问题。准备一劳永逸解决问题。
@@ -935,9 +959,10 @@ ls /tools/bin/file
 ```
 
 输出：
-```text 
+```text
 /tools/bin/file
 ```
+
 ## findutils
 
 完成
@@ -951,6 +976,7 @@ ls /tools/bin/find
 ```text
 /tools/bin/find
 ```
+
 ## gawk
 
 需要设置automake的版本。
@@ -966,6 +992,7 @@ ls /tools/bin/gawk
 ```text
 /tools/bin/gawk
 ```
+
 ## gettext
 
 只需要添加
@@ -988,6 +1015,7 @@ ls /tools/bin/{gettext,msg*}
 /tools/bin/msgcat /tools/bin/msgconv /tools/bin/msgfilter
 /tools/bin/msginit /tools/bin/msguniq
 ```
+
 ## grep
 
 需要设置automake的版本
@@ -1003,6 +1031,7 @@ ls /tools/bin/grep
 ```text
 /tools/bin/grep
 ```
+
 ## gzip
 
 完成。
@@ -1016,7 +1045,8 @@ ls /tools/bin/gz*
 ```text
 /tools/bin/gzexe /tools/bin/gzip
 ```
-## sed 
+
+## sed
 
 完成
 
@@ -1029,6 +1059,7 @@ ls /tools/bin/sed
 ```text
 /tools/bin/sed
 ```
+
 ## util-linux
 
 设置PKG_CONFIG_PATH, 运行autoreconf -fv
@@ -1047,6 +1078,7 @@ ls /tools/bin/{mount,umou*}
 ```text
 /tools/bin/mount /tools/bin/umount
 ```
+
 ## kmod
 
 需要设置PKG_CONFIG_PATH,并且运行autoreconf -fv
@@ -1063,6 +1095,7 @@ ls /tools/bin/*mod
 /tools/bin/chmod /tools/bin/depmod /tools/bin/insmod /tools/bin/kmod
 /tools/bin/lsmod /tools/bin/rmmod
 ```
+
 ## vim
 
 完成。参考了书和CLFS的文档。
@@ -1079,6 +1112,7 @@ ls /tools/bin/vi*
 /tools/bin/vi /tools/bin/view /tools/bin/vim /tools/bin/vimdiff
 /tools/bin/vimtutor
 ```
+
 ## nano
 
 虽然编译通过了，但我总觉得不太合理。
@@ -1093,6 +1127,7 @@ ls /tools/bin/nano
 ```text
 /tools/bin/nano
 ```
+
 ## which
 
 完成。
@@ -1106,13 +1141,14 @@ ls /tools/bin/which
 ```text
 /tools/bin/which
 ```
+
 ## iproute
 
 设置了`LIBDIR=/tools/lib64/`
 
 完成。
 
-检查： 
+检查：
 ```bash
 ls /tools/sbin/{ifstat,ip}
 ```
@@ -1121,6 +1157,7 @@ ls /tools/sbin/{ifstat,ip}
 ```text
 /tools/sbin/ifstat /tools/sbin/ip
 ```
+
 ## dhcpcd
 
 完成。
@@ -1134,6 +1171,7 @@ ls /tools/sbin/dhcpcd
 ```text
 /tools/sbin/dhcpcd
 ```
+
 ## fipscheck
 
 在Rocky Linux 10中，fipscheck包改由libkcapi-1.5.0-3.el10.src.rpm提供。
@@ -1202,6 +1240,7 @@ ls /tools/bin/ssh* /tools/sbin/ssh*
 /tools/bin/ssh /tools/bin/ssh-agent /tools/bin/ssh-keyscan
 /tools/bin/ssh-add /tools/bin/ssh-keygen /tools/sbin/sshd
 ```
+
 ## sudo
 
 完成
@@ -1213,7 +1252,8 @@ ls /tools/bin/sudo
 ```text
 /tools/bin/sudo
 ```
-## e2fsprogs  
+
+## e2fsprogs
 
 添加 `LDFLAGS="-L/tools/lib64 -luuid -lblkid"`
 
@@ -1230,7 +1270,8 @@ ls /tools/sbin/{mkfs.*,fsck.*}
 /tools/sbin/mkfs.minix
 /tools/sbin/fsck.ext3 /tools/sbin/mkfs.bfs /tools/sbin/mkfs.ext3
 ```
-## inih 
+
+## inih
 
 按照<https://github.com/sunhaiyong1978/CLFS-for-LoongArch/blob/main/CLFS_For_LoongArch64.md>
 
@@ -1245,6 +1286,7 @@ ls /tools/lib64/libinih.so*
 ```text
 /tools/lib64/libinih.so /tools/lib64/libinih.so.0
 ```
+
 ## uuid
 
 需要更新`config.guess`以及 `config.sub`文件
@@ -1260,6 +1302,7 @@ ls /tools/lib64/libossp-uuid.*
 /tools/lib64/libossp-uuid.so.16.0.22
 /tools/lib64/libossp-uuid.la /tools/lib64/libossp-uuid.so.16
 ```
+
 ## userspace-rcu
 
 0.14.0版本，需要添加支持龙架构的补丁：
@@ -1304,6 +1347,7 @@ ls /tools/lib64/liburcu*
 /tools/lib64/liburcu-common.so /tools/lib64/liburcu-qsbr.la
 /tools/lib64/liburcu-common.so.8 /tools/lib64/liburcu-qsbr.so
 ```
+
 ## xfsprogs
 
 使用了ini.h，需要安装libinih开发包;  使用了uuid.h,需要安装uuid; 需要urcu.h安装userspace-rcu
@@ -1322,6 +1366,7 @@ ls /tools/sbin/*xfs
 ```text
 /tools/sbin/fsck.xfs /tools/sbin/mkfs.xfs
 ```
+
 ## dosfstools
 
 完成
@@ -1335,6 +1380,7 @@ ls /tools/sbin/*vfat
 ```text
 /tools/sbin/fsck.vfat /tools/sbin/mkfs.vfat
 ```
+
 ## bison
 
 完成
@@ -1348,6 +1394,7 @@ ls /tools/bin/{bison,yacc}
 ```text
 /tools/bin/bison /tools/bin/yacc
 ```
+
 ## check
 
 configure的时候，添加`--disable-build-docs`选项
@@ -1363,6 +1410,7 @@ ls /tools/bin/checkmk
 ```text
 /tools/bin/checkmk
 ```
+
 ## diffutils
 
 完成
@@ -1375,7 +1423,8 @@ ls /tools/bin/diff*
 输出：
 ```text
 /tools/bin/diff /tools/bin/diff3
-````
+```
+
 ## make
 
 完成
@@ -1387,6 +1436,7 @@ ls /tools/bin/make
 ```text
 /tools/bin/make
 ```
+
 ## patch
 
 需要更新`config.sub`和`config.guess`。完成
@@ -1400,6 +1450,7 @@ ls /tools/bin/patch
 ```text
 /tools/bin/patch
 ```
+
 ## tar
 
 完成。
@@ -1413,6 +1464,7 @@ ls /tools/bin/tar
 ```text
 /tools/bin/tar
 ```
+
 ## textinfo
 
 完成。甚至不需要修改Makefile.am文件。
@@ -1425,6 +1477,7 @@ ls /tools/bin/info
 ```text
 /tools/bin/info
 ```
+
 ## m4
 
 完成
@@ -1436,6 +1489,7 @@ ls /tools/bin/m4
 ```text
 /tools/bin/m4
 ```
+
 ## pkgconf
 
 完成。
@@ -1449,6 +1503,7 @@ ls /tools/bin/pkg-config
 ```text
 /tools/bin/pkg-config
 ```
+
 ## autoconf
 
 完成。检查：
@@ -1460,6 +1515,7 @@ ls /tools/bin/autoconf
 ```text
 /tools/bin/autoconf
 ```
+
 ## automake
 
 完成。
@@ -1473,6 +1529,7 @@ ls /tools/bin/automake
 ```text
 /tools/bin/automake
 ```
+
 ## libtool
 
 完成
@@ -1484,6 +1541,7 @@ ls /tools/bin/libtool
 ```text
 /tools/bin/libtool
 ```
+
 ## flex
 
 完成
@@ -1496,6 +1554,7 @@ ls /tools/bin/flex
 ```text
 /tools/bin/flex
 ```
+
 ## tcl
 
 完成。
@@ -1510,6 +1569,7 @@ ls /tools/bin/tclsh /tools/lib64/libtcl*
 /tools/bin/tclsh /tools/lib64/libtcl.so /tools/lib64/libtcl8.6.so
 /tools/lib64/libtclstub8.6.a
 ```
+
 ## lua
 
 完成
@@ -1524,6 +1584,7 @@ ls /tools/bin/lua
 ```text
 /tools/bin/lua
 ```
+
 ## cpio
 
 完成
@@ -1537,7 +1598,9 @@ ls /tools/bin/cpio
 ```text
 /tools/bin/cpio
 ```
+
 ## tcsh
+
 编译的时候报错：`undefined reference to 'crypt'`
 
 安装完libxcrypt再安装tcsh,完成。
@@ -1550,6 +1613,7 @@ ls /tools/bin/tcsh
 ```text
 /tools/bin/tcsh
 ```
+
 ## attr
 
 acl依赖attr。完成。
@@ -1562,6 +1626,7 @@ ls /tools/bin/attr
 ```text
 /tools/bin/attr
 ```
+
 ## audit
 
 需要根据spec文件，编写编译脚本，去掉一些功能。完成。
@@ -1577,7 +1642,8 @@ ls /tools/lib64/libaudit.*
 /tools/lib64/libaudit.so.1.0.0
 /tools/lib64/libaudit.la /tools/lib64/libaudit.so.1
 ```
-## acl 
+
+## acl
 
 rpm的安装需要acl。
 
@@ -1591,6 +1657,7 @@ ls /tools/lib64/libacl.*
 /tools/lib64/libacl.la /tools/lib64/libacl.so /tools/lib64/libacl.so.1
 /tools/lib64/libacl.so.1.1.2302
 ```
+
 ## nettle
 
 需要`autoreconf -ifv`,并且在configure时，去掉 sm3和sm4支持。
@@ -1605,6 +1672,7 @@ ls /tools/lib64/libnettle.*
 /tools/lib64/libnettle.a /tools/lib64/libnettle.so
 /tools/lib64/libnettle.so.8 /tools/lib64/libnettle.so.8.10
 ```
+
 ## rpm
 
 rpm 4.15采用configure来生成Makefile，但4.19改用了cmake。因此，交叉编译的方式需要进行改变。
@@ -1639,7 +1707,9 @@ ls /tools/bin/rpm*
 /tools/bin/rpm2cpio /tools/bin/rpmgraph /tools/bin/rpmquery
 /tools/bin/rpmspec
 ```
+
 ## 配置rpm
+
 参考[配置脚本](scripts/tmp/config-tmp-rpm.sh)。
 完成
 
@@ -1662,6 +1732,7 @@ ls /tools/sbin/init /tools/bin/systemctl
 ```text
 /tools/bin/systemctl /tools/sbin/init
 ```
+
 ## dbus
 
 需要设置PKG_CONFIG_PATH环境变量，并且不安装doc。
@@ -1689,6 +1760,7 @@ ls /tools/bin/login
 ```text
 /tools/bin/login
 ```
+
 ## Linux内核
 
 使用debian的6.17.11内核。
@@ -1710,10 +1782,11 @@ ls /tools/bin/login
     在`make menuconfig`界面，善于使用"/"来搜索模块。
 
   最终使用的配置文件在[这里](sources/config-6.17.11)。
+
 ## grub
 
 完成。
-第一次尝试使用grub 2.12 
+第一次尝试使用grub 2.12
 
 检查：
 ```bash
@@ -1732,6 +1805,7 @@ ls /tools/bin/grub-*
 ```text
 Testsuite summary for GRUB 2.12
 ============================================================================
+
 # TOTAL: 87
 # PASS:  15
 # SKIP:  8
@@ -1741,7 +1815,6 @@ Testsuite summary for GRUB 2.12
 # ERROR: 21
 ```
 
-
 转而使用上游[grub 2.14](https://ftp.gnu.org/gnu/grub/grub-2.14.tar.xz)替代。按照孙海勇的脚本编译。
 
 测试结果还是很惨烈：
@@ -1749,6 +1822,7 @@ Testsuite summary for GRUB 2.12
 
 Testsuite summary for GRUB 2.14
 ============================================================================
+
 # TOTAL: 90
 # PASS:  20
 # SKIP:  9
@@ -1837,6 +1911,7 @@ error: could not compile `bootstrap` (lib) due to 1 previous error
 未完成。不影响使用，先不编译了。
 
 # 配置临时系统
+
 完成上述软件包的编译后，可以配置一下临时系统，可以满足启动的要求了。
 
 配置包括：复制文件、创建基本的目录、创建必要的符号链接等。
@@ -1881,7 +1956,7 @@ sudo qemu-nbd -c /dev/nbd0 rocky_vm.qcow2
 ```
 
 - 对qcow2文件进行分区。这里可以直接用图形界面的gparted进行操作。
-```bash 
+```bash
 sudo /sbin/gparted /dev/nbd0
 ```
 首先，创建gpt分区表
@@ -1971,7 +2046,6 @@ CONFIG_NLS_ASCII 设置为y。
 
 再次重新编译内核。
 
-
 - 设置root密码，设置为了loongarch
 
 - 创建新用户。创建一个叫做rocky的用户。
@@ -2040,11 +2114,12 @@ Complete documentation for Perl, including FAQ lists, should be found on
 this system using "man perl" or "perldoc perl".  If you have access to the
 Internet, point your browser at https://www.perl.org/, the Perl Home Page.
 ```
+
 ## Python
 
 替换config.guess和config.sub
 
-## Git 
+## Git
 
 正常编译即可。
 
@@ -2075,15 +2150,18 @@ dwz依赖xxhash.h,因此需要先将其补全。
 rocky_vm-stage1.qcow2
 
 ## help2man
+
 perl相关的模块还没有安装，所以编译的时候先`--disable-nls`
 
 ## debugedit
+
 依赖help2man。注释掉gpgverify语句
 
-## ~~gpg2~~ 
+## ~~gpg2~~
+
 ~~rpm包中使用的gpgverify脚本会调用gpg2。依赖的内容太多了，暂时不管它了。~~
 
-## libkcapi 
+## libkcapi
 
 libxcrypt依赖fipscheck,
 这个包已经由libkcapi提供。所以，需要编译libkcapi。
@@ -2099,6 +2177,7 @@ sudo pip3 install dist/setuptools-69.0.3-py3-none-any.whl
 ```
 
 ## redhat-rpm-config
+
 从这里开始，开始进行rpm包的编译。
 
 - 修改`~/rpmbuild/SOURCES/rpmrc`，添加loongarch的optflags：
@@ -2124,9 +2203,10 @@ rpmbuild --rebuild ~/rpmbuild/SRPMS/redhat-rpm-config-293-2.src.rpm --nodeps
 - 配置一下redhat-rpm-config
 
 ## python-srpm-macros
+
  很多rpm包的编译需要python-srpm-macros提供的`__os_install_post_python`这个宏。
 ```bash
- rpmbuild \--rebuild /opt/srpms/Packages/python-rpm-macros-3.12-10.el10.src.rpm  
+ rpmbuild --rebuild /opt/srpms/Packages/python-rpm-macros-3.12-10.el10.src.rpm
  ```
 
 编译生成了如下文件：
@@ -2200,6 +2280,7 @@ filesystem-3.18-17.el10.loongarch.loongarch64.rpm
 需要更改版本号，并重新生成srpm包。
 
 ## Basesystem
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/basesystem-11-22.el10.src.rpm
 sudo rpm -ivh ~/rpmbuild/RPMS/noarch/basesystem-11-22.el10.loongarch.noarch.rpm
@@ -2212,7 +2293,7 @@ sudo rpm -ivh ~/rpmbuild/RPMS/noarch/basesystem-11-22.el10.loongarch.noarch.rpm
 
 less软件包的依赖关系比较简单，很好编译。
 ```bash
-rpmbuild -bb ~/rpmbuild/SPECS/less.spec --nodeps 
+rpmbuild -bb ~/rpmbuild/SPECS/less.spec --nodeps
 sudo rpm -Uvh /home/rocky/rpmbuild/RPMS/loongarch64/less-661-3.el10.loongarch.loongarch64.rpm --nodeps
 ```
 
@@ -2227,8 +2308,8 @@ sudo rpm -Uvh /home/rocky/rpmbuild/RPMS/loongarch64/less-661-3.el10.loongarch.lo
 
 修改kernel.spec文件：
 
-1.  在含有ExclusiveArch的行最后加上loongarch64
-2.  添加对龙架构的支持：
+1. 在含有ExclusiveArch的行最后加上loongarch64
+2. 添加对龙架构的支持：
 
 ```text
 %ifarch loongarch64
@@ -2258,6 +2339,7 @@ File not found:
 ```bash
 sudo rpm -Uvh /home/rocky/rpmbuild/RPMS/loongarch64/kernel-headers-6.12.0-124.21.1.el10.loongarch.loongarch64.rpm
 ```
+
 ## glibc
 
 做了如下的修改：
@@ -2302,17 +2384,18 @@ readelf -l a.out |grep ": /lib"
 
 安装
 ```bash
-sudo rpm -Uvh $(ls ~/rpmbuild/RPMS/loongarch64/{minizip,zlib}-* |grep -v -e "debug") --nodeps 
+sudo rpm -Uvh $(ls ~/rpmbuild/RPMS/loongarch64/{minizip,zlib}-* |grep -v -e "debug") --nodeps
 ```
+
 ## libxcrypt
 
 由于没有安装gpg2, 需要注释掉gpgverify行，或添加 with bootstrap选项。
 
 遇到了这样的报错：
-``` bash
+```bash
 fipshmac -d
-/home/rocky/rpmbuild/BUILDROOT/libxcrypt-4.4.36-10.el10\~bootstrap.loongarch.loongarch64/usr/lib64/fipscheck
-/home/rocky/rpmbuild/BUILDROOT/libxcrypt-4.4.36-10.el10\~bootstrap.loongarch.loongarch64/usr/lib64/libcrypt.so.2.0.0
+/home/rocky/rpmbuild/BUILDROOT/libxcrypt-4.4.36-10.el10~bootstrap.loongarch.loongarch64/usr/lib64/fipscheck
+/home/rocky/rpmbuild/BUILDROOT/libxcrypt-4.4.36-10.el10~bootstrap.loongarch.loongarch64/usr/lib64/libcrypt.so.2.0.0
 Allocation of hmac(sha256) cipher failed (ret=-97)
 ```
 
@@ -2323,7 +2406,7 @@ modprobe crypto_hmac
 modprobe af_alg
 modprobe crypto_hash
 modprobe algif_hash
-````
+```
 参考：
 
 <https://gitee.com/openeuler/community/issues/I1KQMK>
@@ -2356,13 +2439,13 @@ libxcrypt-debugsource-4.4.36-10.el10~bootstrap.loongarch.loongarch64.rpm
 ```
 安装前两个包
 ```bash
-sudo rpm -ivh libxcrypt-4.4.36-10.el10\~bootstrap.loongarch.loongarch64.rpm \
-              libxcrypt-devel-4.4.36-10.el10\~bootstrap.loongarch.loongarch64.rpm \
+sudo rpm -ivh libxcrypt-4.4.36-10.el10~bootstrap.loongarch.loongarch64.rpm \
+              libxcrypt-devel-4.4.36-10.el10~bootstrap.loongarch.loongarch64.rpm \
               --nodeps
 ```
 libxcrypt需要libssp.so, 这就是为什么前面要把libssp.so做符号连接。
 
-## binutils 
+## binutils
 
 为保险起见，为龙架构禁用gold。
 
@@ -2391,6 +2474,7 @@ sudo rpm -ivh binutils-2.41-58.el10.loongarch.2.loongarch64.rpm \
 ```bash
 sudo ln -sv ld.bfd /bin/ld
 ```
+
 ## GMP
 
 编译的时候，需要一个libzstd.so.1文件。在/usr/lib64中，建一个指向/tools/lib64/libzstd.so.1的符号连接
@@ -2421,6 +2505,7 @@ sudo rpm -ivh gmp-6.2.1-12.el10.loongarch.loongarch64.rpm \
             gmp-static-6.2.1-12.el10.loongarch.loongarch64.rpm \
             --nodeps
 ```
+
 ## MPFR
 
 不需要特殊处理，直接编译安装即可。
@@ -2429,7 +2514,6 @@ sudo rpm -ivh gmp-6.2.1-12.el10.loongarch.loongarch64.rpm \
 
 直接编译。
 
-```
 安装：
 ```bash
 sudo rpm -ihv libmpc-devel-1.3.1-7.el10.loongarch.loongarch64.rpm \
@@ -2437,11 +2521,11 @@ sudo rpm -ihv libmpc-devel-1.3.1-7.el10.loongarch.loongarch64.rpm \
   ../noarch/libmpc-doc-1.3.1-7.el10.loongarch.noarch.rpm \
   --nodeps
 ```
+
 ## XZ
 
 修改spec文件，不进行gpgverify
 
-```
 安装：
 ```bash
 sudo rpm -ivh xz-devel-5.6.2-4.el10.loongarch.loongarch64.rpm \
@@ -2451,6 +2535,7 @@ sudo rpm -ivh xz-devel-5.6.2-4.el10.loongarch.loongarch64.rpm \
   xz-5.6.2-4.el10.loongarch.loongarch64.rpm \
   --nodeps
 ```
+
 ## meson
 
 依赖python-setuptools。
@@ -2464,12 +2549,13 @@ sudo rpm -ivh xz-devel-5.6.2-4.el10.loongarch.loongarch64.rpm \
 
 version_no_tilde 这个宏，应该是定义在 rust-srpm-macros中的。
 
-## ninja-build 
+## ninja-build
 
 meson运行的时候，依赖ninja-build
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/ninja-build-1.11.1-9.el10.src.rpm --nodeps --with bootstrap
 ```
+
 ## LZ4
 
 编译需要meson。
@@ -2478,7 +2564,8 @@ meson依赖python-setuptools
 
 编译，安装不含debug的4个包。
 
-## ZSTD 
+## ZSTD
+
 编译的时候，汇报说缺少一个命令：
 ```text
 line 46: execstack: command not found
@@ -2504,6 +2591,7 @@ sudo rpm -ivh libzstd-1.5.5-9.el10.loongarch.loongarch64.rpm \
   libzstd-static-1.5.5-9.el10.loongarch.loongarch64.rpm \
   --nodeps
 ```
+
 ## GCC
 
 需要修改spec文件，添加一个补丁。
@@ -2637,26 +2725,29 @@ sudo rpm -Uvh binutils-2.41-58.el10.loongarch.2.loongarch64.rpm \
 ```bash
 sudo ln -sv ld.bfd /bin/ld
 ```
+
 ## ZLIB
 
 这个包的源码没有进行调整，直接使用原始的src.rpm包编译安装即可。
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/zlib-1.2.11-40.el9.src.rpm --nodeps
 ```
-##  libxcrypt
+
+## libxcrypt
+
 使用之前留下来的spec文件来编译。
 
 注意，还是需要modprobe很多内核模块。
 
-## GMP 
+## GMP
 
 正常操作。
 
-## MPFR 
+## MPFR
 
 正常操作。
 
-## LibMPC 
+## LibMPC
 
 正常操作。
 
@@ -2664,10 +2755,11 @@ rpmbuild --rebuild /opt/srpms/Packages/zlib-1.2.11-40.el9.src.rpm --nodeps
 
 正常操作。
 
-## LZ4 
+## LZ4
+
 正常操作。
 
-## ZSTD 
+## ZSTD
 
 正常操作。
 
@@ -2682,12 +2774,14 @@ rpmbuild --rebuild /opt/srpms/Packages/zlib-1.2.11-40.el9.src.rpm --nodeps
 保证/lib64下面，没有指向/tools的符号链接。
 
 # 残破的目标系统
+
 继续补全目标系统。
 
 设置默认自举。
 
 在`/tools/lib/rpm/platform/loongarch64-linux/macros`结尾，添加： `%with_bootstrap 1`
 首先，进行系统交互环境的编译。
+
 ## ncurses
 
 注释掉SPEC文件中的gpgverify 行
@@ -2704,7 +2798,8 @@ rpmbuild --rebuild /opt/srpms/Packages/zlib-1.2.11-40.el9.src.rpm --nodeps
 
 编译生成5个文件,安装其中与debug无关的3个。
 
-## bash-completion 
+## bash-completion
+
 正常编译安装即可。
 
 ## bzip2
@@ -2755,11 +2850,13 @@ check通不过，编译的时候添加`--nocheck`
 ## Unzip
 
 实际打包的时候还是要添加`--nodeps`
+
 ## Zip
 
 打包的时候添加`--nodeps`。
 
 ## help2man
+
   正常编译即可。
 
 ## M4
@@ -2767,6 +2864,7 @@ check通不过，编译的时候添加`--nocheck`
 正常编译即可。
 
 ## Autoconf
+
   编译的时候，去掉对emacs的支持。
   ```bash
   rpmbuild --rebuild /opt/srpms/Packages/autoconf-2.71-13.el10.src.rpm \
@@ -2774,12 +2872,15 @@ check通不过，编译的时候添加`--nocheck`
             --nodeps \
             --nocheck
   ```
+
 ## Automake
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/automake-1.16.5-20.el10.src.rpm \
         --without check \
         --nodeps
 ```
+
 ## Texinfo
 
 修改spec文件
@@ -2796,6 +2897,7 @@ rpmbuild --rebuild /opt/srpms/Packages/automake-1.16.5-20.el10.src.rpm \
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/pkgconf-2.1.0-3.el10.src.rpm --nocheck --nodeps
 ```
+
 ## Lua
 
 正常编译即可。
@@ -2813,18 +2915,23 @@ rpmbuild --rebuild /opt/srpms/Packages/pkgconf-2.1.0-3.el10.src.rpm --nocheck --
 正常编译即可。
 
 ## tar
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/tar-1.35-9.el10_1.src.rpm \
         --without check \
         --without selinux \
         --nodeps
 ```
+
 ## cpio
+
   正常编译即可。
+
 ## bison
+
 正常编译即可。测试时间很长。
 
-##  FLEX
+## FLEX
 
 完成。
 
@@ -2846,7 +2953,7 @@ rpmbuild --rebuild /opt/srpms/Packages/tar-1.35-9.el10_1.src.rpm \
 
 依赖openssl。先跳过，编译完openssl再来编译cmake.
 
-## make 
+## make
 
 正常编译。
 
@@ -2855,6 +2962,7 @@ rpmbuild --rebuild /opt/srpms/Packages/tar-1.35-9.el10_1.src.rpm \
 不要check
 
 ## sed
+
 正常编译即可。
 
 ## grep
@@ -2866,10 +2974,12 @@ rpmbuild --rebuild /opt/srpms/Packages/tar-1.35-9.el10_1.src.rpm \
 正常编译即可。
 
 ## file
+
 编译脚本
 ```bash
 rpmbuild -bb ~/rpmbuild/SPECS/file.spec --nodeps --without python3
 ```
+
 ## NSPR
 
 nspr源码在NSS中，不再单独编译这个了。
@@ -2888,6 +2998,7 @@ check的时候没有通过，跳过check。
 ```bash
 rpmbuild -bb ~/rpmbuild/SPECS/pcre2.spec --nodeps --nocheck
 ```
+
 ## libsepol
 
 正常编译即可。
@@ -2977,6 +3088,7 @@ error: Bad exit status from /var/tmp/rpm-tmp.9zb2oM (%install)
 --libdir=%{_lib} \
 %endif
 ```
+
 ## libxml2
 
 修改spec文件，去除`__pycache`目录相关的处理和打包。
@@ -2991,7 +3103,7 @@ tree.c:227:17: error: 'SIZE_MAX' undeclared (first use in this function)
 tree.c:49:1: note: 'SIZE_MAX' is defined in header '<stdint.h>'; this is probably fixable by adding '#include <stdint.h>'
    48 | #include "private/tree.h"
   +++ |+#include <stdint.h>
-   49 | 
+   49 |
 ```
 
 经过查询，这个问题已经有人提到了：
@@ -3010,45 +3122,45 @@ ERROR   0002: file '/usr/lib64/libxml2.so.2.12.5' contains an invalid rpath '/to
 
 按照程序的提示，添加`QA_RPATHS=$(( 0x0002|0x0004 ))`，规避上述问题。
 
-## libxslt 
+## libxslt
 
 正常编译即可。
 
-## sgml-common 
+## sgml-common
 
 正常编译即可。
 
-## docbook-dtds 
+## docbook-dtds
 
 正常编译即可。
 
-## docbook-style-xls 
+## docbook-style-xls
 
 正常编译即可。
 
-## xmlto 
+## xmlto
 
 正常编译即可。
 
-## expat 
+## expat
 
 正常编译即可。
 
-## mpdecimal 
+## mpdecimal
 
 正常编译即可。
 
-## python3 
+## python3
 
 依赖mpdecimal-devel，需要先安装这个。
 
 按照书中的要求进行修改。
 
-## libxml2 
+## libxml2
 
 解决依赖关系以后，重新编译libxml2
 
-## NSS 
+## NSS
 
 按照书中的提示，修改spec文件，注释掉一部分代码。
 
@@ -3056,33 +3168,33 @@ ERROR   0002: file '/usr/lib64/libxml2.so.2.12.5' contains an invalid rpath '/to
 
 使用`autoreconf -ifv`更新它们。
 
-## PCRE2 
+## PCRE2
 
 已经安装
 
-## LZO 
+## LZO
 
 正常编译即可。
 
-## icu 
+## icu
 
 不生成文档。
 
-## Boost 
+## Boost
 
 去掉一些功能模块。
 
 编译遇到了一些报错：
 ```text
 Installed (but unpackaged) file(s) found:
-/usr/lib/debug/usr/lib64/libboost_python312.so.1.83.0-1.83.0-5.el10\~bootstrap.loongarch.loongarch64.debug
+/usr/lib/debug/usr/lib64/libboost_python312.so.1.83.0-1.83.0-5.el10~bootstrap.loongarch.loongarch64.debug
 /usr/lib64/libboost_python312.so
 /usr/lib64/libboost_python312.so.1.83.0
-````
+```
 
 暂时给rpmbuild添加参数`--define _unpackaged_files_terminate_build 0`，规避这个问题
 
-## Cmake 
+## Cmake
 
 去掉一些功能模块。
 
@@ -3094,35 +3206,35 @@ cmake依赖vim-filesystem。
 
 test需要花很长的时间，如果通不过，就加上`--nocheck`
 
-## Hostname 
+## Hostname
 
 正常编译即可。
 
-## Coreutils 
+## Coreutils
 
 注释掉spec中的gpg校验部分。有两个案例会fail， 不管了。加上`--nocheck`。
 
 coreutils-single和coreutils两个包冲突，前者不装了。
 
-## Python-rpm-generators 
+## Python-rpm-generators
 
 正常编译安装即可。还依赖了python-packaging，
 pyproject-rpm-macros，pyproject-srpm-macros,
 python-packaging，都需要编译安装。
 
-## Python-setuptools 
+## Python-setuptools
 
 依赖python-rpm-generators。
 
-## Re2c 
+## Re2c
 
 没有找到源码,不编译。
 
-## Ninja-build 
+## Ninja-build
 
 正常编译即可。不需要修正rpmmacrodir，因为现在的spec文件中已经不用这个宏了。
 
-## Meson 
+## Meson
 
 遇到了version_no_tilde的宏。直接定义一下。
 ```bash
@@ -3130,27 +3242,27 @@ rpmbuild --rebuild /opt/srpms/Packages/meson-1.4.1-4.el10.src.rpm --define " ver
 ```
 将macros.meson复制到/tools/lib/rpm/
 
-## Dos2unix 
+## Dos2unix
 
 注释掉spec文件中，关于gpgverify的语句。
 
-## Swig 
+## Swig
 
 添加`--without testsuite`参数
 
-## Less 
+## Less
 
 正常编译即可。
 
-## Gzip 
+## Gzip
 
 正常编译。
 
-## libpaper 
+## libpaper
 
 正常编译。
 
-## chrpath 
+## chrpath
 
 按照书中的写法，修改spec文件。
 
@@ -3158,19 +3270,20 @@ rpmbuild --rebuild /opt/srpms/Packages/meson-1.4.1-4.el10.src.rpm --define " ver
 ```bash
 rpmbuild -ba ~/rpmbuild/SPECS/chrpath.spec --define '_unpackaged_files_terminate_build 0'
 ```
-## Psutils 
+
+## Psutils
 
 测试通不过。加上`--nocheck`。
 
-## libedit 
+## libedit
 
 正常编译即可。
 
-## multilib-rpm-config 
+## multilib-rpm-config
 
 正常编译即可。
 
-## llvm 
+## llvm
 
 遇到这样的报错：
 ```text
@@ -3178,196 +3291,197 @@ rpmbuild -ba ~/rpmbuild/SPECS/chrpath.spec --define '_unpackaged_files_terminate
 ```
 需要重新编安装python-rpm-macros。
 
-## python-lit 
+## python-lit
 
 找不到源码包了，无法安装。
 
-## clang 
+## clang
 
 和llvm相关，先跳过。
 
-## ccache 
+## ccache
 
 找不到源码包，无法安装。
 
-## nasm 
+## nasm
 
 正常编译即可。
 
-## Gpref 
+## Gpref
 
 正常编译即可。
 
-## libutempter 
+## libutempter
 
 正常编译即可。
 
-## libpipeline 
+## libpipeline
 
 正常编译即可。
 
+## giflib
 
-## giflib 
 开始编译图形相关软件包。
 
 giflib这个包依赖mingw64-gcc, mingw64-filesystem
 
 修改spec文件，做一个完全不依赖mingw的版本。
 
-## libpng 
+## libpng
 
 正常编译即可。
 
-## libjpeg-turbo 
+## libjpeg-turbo
 
 正常编译即可。
 
-## Jbigkit 
+## Jbigkit
 
 正常编译即可。
 
-## libtiff 
+## libtiff
 
 正常编译即可。
 
-## lcms2 
+## lcms2
 
 正常编译即可。
 
-## libmng 
+## libmng
 
 正常编译即可。
 
-## Xorg-X11-utils-macros 
+## Xorg-X11-utils-macros
 
 正常编译即可。
 
-## Xorg-X11-Proto-devel 
+## Xorg-X11-Proto-devel
 
 正常编译即可。
 
-## libXau 
+## libXau
 
 正常编译即可。
 
-## libXdmcp 
+## libXdmcp
 
 正常编译即可。
 
-## xcb-proto 
+## xcb-proto
 
 正常编译即可。
 
-## libxcb 
+## libxcb
 
 正常编译即可。
 
-## xorg-x11-xtrans-devel 
+## xorg-x11-xtrans-devel
 
 正常编译即可。
 
-## libx11 
+## libx11
 
 正常编译即可。
 
-## brotli 
+## brotli
 
 正常编译即可。
 
-## freetype 
+## freetype
 
 依赖brotli
 
-## forge-srpm-macros 
+## forge-srpm-macros
 
 打包的时候加上`--nocheck`
 编译脚本：
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/forge-srpm-macros-0.4.0-6.el10.src.rpm --nodeps --nocheck
 ```
-## fonts-rpm-macros 
+
+## fonts-rpm-macros
 
 依赖forge-srpm-macros，顺便安装了。
 
 把安装的宏定义文件，复制到`/tools/lib/rpm/macrod.d/`
 
-## fontconfig 
+## fontconfig
 
 按照书中操作即可。
 
-## Pixman 
+## Pixman
 
 正常编译即可。
 
-## libimagequant 
+## libimagequant
 
 找不到源码。
 
-## libICE 
+## libICE
 
 正常编译即可。
 
-## libSM 
+## libSM
 
 修改spec文件，将`--with-libuuid`, 改为`--without-libuuid`
 
-## libXrender 
+## libXrender
 
 正常编译即可。
 
-## libXext 
+## libXext
 
 正常编译即可。
 
-## libXt 
+## libXt
 
 正常编译即可。
 
-## libXpm 
+## libXpm
 
 正常编译即可。
 
-## libXmu 
+## libXmu
 
 正常编译即可。
 
-## libXaw 
+## libXaw
 
 正常编译即可。
 
-## libXfixes 
+## libXfixes
 
 正常编译即可。
 
-## libXi 
+## libXi
 
 正常编译即可。
 
-## libXft 
+## libXft
 
 正常编译即可。
 
-## libXinerama 
+## libXinerama
 
 正常编译即可。
 
-## libXtst 
+## libXtst
 
 正常编译即可。
 
-## python-wheels 
+## python-wheels
 
 正常编译即可。
 
-## python-pip 
+## python-pip
 
 正常编译即可。
 
-## marshalparser 
+## marshalparser
 
 正常编译即可。
 
-## glib2 
+## glib2
 
 依赖g-ir-scanner，尝试编译安装gobject-introspection。gobject-introspection也依赖glib2。出现循环依赖了。给meson添加`-Dintrospection=disabled`
 参数。
@@ -3447,81 +3561,84 @@ Directory not found: /home/rocky/rpmbuild/BUILDROOT/glib2-2.80.4-10.el10~bootstr
 ```
 编译成功，安装四个非debug的包。
 
-## Cairo 
+## Cairo
 
 新版本的cairo,构建方式改成了meson。
 
 先尝试构建一下，看看报什么错
 修改spec文件，需要如下改动：
 
- * `-Dgtk_doc=false`
+- `-Dgtk_doc=false`
 
-* 去掉`gtk-doc/html/cairo`
+- 去掉`gtk-doc/html/cairo`
 
-## gd 
+## gd
 
 编译的时候添加 `--nodeps --nocheck`
 
-## libcroco 
+## libcroco
 
 找不到
 
-## Jbig2dec 
+## Jbig2dec
 
 正常编译即可。
 
-## OpenJPEG2 
+## OpenJPEG2
 
 正常编译即可。
 
-## graphite2 
+## graphite2
 
 新版的graphite2已经不编译docs了。
 
-## Python-mako 
+## Python-mako
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/python-mako-1.2.3-9.el10.src.rpm --nodeps --nocheck
 ```
-## gobject-introspection 
+
+## gobject-introspection
 
 正常编译即可。
 
-## Harfbuzz 
+## Harfbuzz
 
 这个包也是采用meson编译，缺少gtk-doc,给meson添加参数
 ```text
 -Ddocs=disabled -Ddoc_tests=false -Dtests=disabled
 -Dintrospection=disabled
 ```
-## T1lib 
+
+## T1lib
 
 没有找到源码包。
 
-## T1utils 
+## T1utils
 
 没有找到源码包。
 
-## Xaw3d 
+## Xaw3d
 
 注释掉gpgverify的语句
 
-## libXComposite 
+## libXComposite
 
 正常编译即可。
 
-## zziplib 
+## zziplib
 
 正常编译即可。
 
-## teckit 
+## teckit
 
 正常编译即可。
 
-## potrace 
+## potrace
 
 正常编译即可。
 
-## Texlive 
+## Texlive
 
 texlive依赖zziplib，teckit, potrace, javac
 
@@ -3529,15 +3646,15 @@ texlive依赖zziplib，teckit, potrace, javac
 
 最终生成了398个包。
 
-## gettext 
+## gettext
 
 正常编译即可。
 
-## adobe-mapping-cmap 
+## adobe-mapping-cmap
 
 正常编译即可。
 
-## adobe-mapping-pdf 
+## adobe-mapping-pdf
 
 正常编译即可。
 
@@ -3561,7 +3678,7 @@ texlive依赖zziplib，teckit, potrace, javac
 
 正常编译即可。
 
-## ghostscript 
+## ghostscript
 
 正常编译即可。
 
@@ -3569,19 +3686,19 @@ texlive依赖zziplib，teckit, potrace, javac
 
 补全了libijs、libidn2、urw-base35-fonts等依赖关系后，ps2pdf命令可以正常运行了。
 
-## google-droid-font 
+## google-droid-font
 
 正常编译即可。
 
-## libsigsegv 
+## libsigsegv
 
 正常编译即可。
 
-## poppler-data 
+## poppler-data
 
 正常编译即可。
 
-## poppler 
+## poppler
 
 依赖Gpgmepp。不想要这个，直接关掉。SPEC文件中添加`-DENABLE_GPGME=OFF`
 
@@ -3600,6 +3717,7 @@ texlive依赖zziplib，teckit, potrace, javac
 ```bash
 rpmbuild -bb rpmbuild/SPECS/poppler.spec  --nodeps --nocheck --without qt
 ```
+
 ## ZZiplib
 
 已经安装了
@@ -3623,12 +3741,15 @@ rpmbuild -bb rpmbuild/SPECS/poppler.spec  --nodeps --nocheck --without qt
 ## perl-devel-checklib
 
 正常编译即可。
+
 ## perl-XML-parser
 
 正常编译即可。
+
 ## perl-XML-XPath
 
 正常编译即可。
+
 ## texlive-base
 
 找不到。
@@ -3636,12 +3757,15 @@ rpmbuild -bb rpmbuild/SPECS/poppler.spec  --nodeps --nocheck --without qt
 ## gawk
 
 正常编译即可。
+
 ## groff
 
 正常编译即可。
+
 ## Xapian-core
 
 正常编译即可。
+
 ## QPdf
 
 修改CMake的设置
@@ -3650,21 +3774,25 @@ rpmbuild -bb rpmbuild/SPECS/poppler.spec  --nodeps --nocheck --without qt
 -DALLOW_CRYPTO_NATIVE=1 \\
 -DREQUIRE_CRYPTO_NATIVE=1 \\
 ```
+
 ## TK
 
 正常编译即可。
 
 ## Graphviz
+
 编译脚本
 ```bash
 rpmbuild -bb ~/rpmbuild/SPECS/graphviz.spec --without php --without ocaml --nodeps
 ```
+
 ## Doxygen
 
 编译脚本：
 ```bash
 rpmbuild -bb rpmbuild/SPECS/doxygen.spec --define "_module_build 1" --nodeps --nocheck
 ```
+
 ## symlinks
 
 已经安装。
@@ -3696,27 +3824,35 @@ rpmbuild -bb rpmbuild/SPECS/doxygen.spec --define "_module_build 1" --nodeps --n
 ## itstool
 
 正常编译即可。
+
 ## docbook-style-dssl
 
 正常编译即可。
+
 ## perl-sgmlspm
 
 正常编译即可。
+
 ## dockbook-utils
 
 正常编译即可。
+
 ## docbook5-style-xsl
 
 正常编译即可。
+
 ## oniguruma
 
 正常编译即可。
+
 ## slang
 
 正常编译即可。
+
 ## telnet
 
 正常编译即可。
+
 ## lynx
 
 依赖telnet,补上。
@@ -3761,10 +3897,11 @@ rpmbuild -bb rpmbuild/SPECS/doxygen.spec --define "_module_build 1" --nodeps --n
 
 测试的时候，关于TZ的很多测试会失败。
 ```bash
-rpmbuild --rebuild /home/rocky/rpmbuild/SRPMS/ruby-3.3.10-12.el10\~bootstrap.loongarch.src.rpm --without systemtap --define "with_hardening_test 0" --nodeps --nocheck
+rpmbuild --rebuild /home/rocky/rpmbuild/SRPMS/ruby-3.3.10-12.el10~bootstrap.loongarch.src.rpm --without systemtap --define "with_hardening_test 0" --nodeps --nocheck
 ```
 
 ## 重要提醒
+
 下面开始要编译的软件包，与系统的启动、登录过程相关。
 
 当前状态下，系统的登录依赖的是/tools/目录中的文件；随着编译的进行，/tools中的部分可执行文件会被新编译的rpm包所提供的文件所取代，导致系统处于一个混乱的混合状态：rpm包提供的文件和/tools中的文件共同发挥作用，但彼此并不完全兼容。
@@ -3774,7 +3911,6 @@ rpmbuild --rebuild /home/rocky/rpmbuild/SRPMS/ruby-3.3.10-12.el10\~bootstrap.loo
 **切记！**
 
 如果已经遇到了虚拟机无法登录的问题，也不必恐慌，后面还会介绍解决方案。
-
 
 ## libselinux
 
@@ -3805,6 +3941,7 @@ rpmbuild -bb rpmbuild/SPECS/pam.spec --define '_unpackaged_files_terminate_build
 ```bash
 rpmbuild -bb rpmbuild/SPECS/audit.spec --nodeps --define '_unpackaged_files_terminate_build 0'
 ```
+
 ## lmdb
 
 正常编译即可。
@@ -3940,6 +4077,7 @@ sed -i "s/gtkdocize/#gtkdocize/g" autogen.sh
 ```bash
 rpmbuild -bb rpmbuild/SPECS/chkconfig.spec --nodeps  --define '_unpackaged_files_terminate_build 0'
 ```
+
 ## p11-kit
 
  完成
@@ -3989,7 +4127,7 @@ rpmbuild --rebuild /opt/srpms/Packages/pytest-7.4.3-5.el10.src.rpm --without tes
  error: Bad exit status from /var/tmp/rpm-tmp.FVnBBF (%install)
 ```
 
-解决方案： 
+解决方案：
 
 把`~/rpmbuild/BUILD`,`~/rpmbuild/BUILDROOT`文件夹中，有关pytest的内容全部删掉，再重新编译。
 
@@ -3998,6 +4136,7 @@ rpmbuild --rebuild /opt/srpms/Packages/pytest-7.4.3-5.el10.src.rpm --without tes
 ```bash
  rpmbuild --rebuild /opt/srpms/Packages/Cython-3.0.9-8.el10.src.rpm --nodeps
 ```
+
 ## python-lxml
 
  用root 编译
@@ -4023,6 +4162,7 @@ rpmbuild --rebuild /opt/srpms/Packages/pytest-7.4.3-5.el10.src.rpm --without tes
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/gtk-doc-1.33.2-12.el10.src.rpm --nodeps
 ```
+
 ## 异常处理
 
 在编译的过程中，我关闭过虚拟机，重启以后虚拟机就无法登录了，输入密码以后显示login incorrect。
@@ -4045,10 +4185,10 @@ May 04 13:53:55 RockyLoong login[410]: FAILED LOGIN 1 FROM console FOR rocky, Au
 
 使用chroot, 进入已经挂载的qcow2镜像内， 后执行
 ```bash
-cat <<EOF > /etc/pam.d/postlogin 
-#%PAM-1.0 
-session optional pam_umask.so 
-session optional pam_lastlog.so nowtmp 
+cat <<EOF > /etc/pam.d/postlogin
+#%PAM-1.0
+session optional pam_umask.so
+session optional pam_lastlog.so nowtmp
 EOF
 ```
 
@@ -4112,8 +4252,8 @@ Installed (but unpackaged) file(s) found:
    /usr/lib/tmpfiles.d/audit.conf
 ```
 
-
 ## util-linux
+
 修改spec文件中的编译参数，
 
 - 将`--with-udev`改为`--without-udev`
@@ -4126,7 +4266,8 @@ Installed (but unpackaged) file(s) found:
 uuidd.*
 uuidd-tmpfiles.conf
 ```
-##  ima-evm-utils
+
+## ima-evm-utils
 
 正常编译即可。
 
@@ -4160,6 +4301,7 @@ uuidd-tmpfiles.conf
 ```bash
 rpmbuild -bb rpmbuild/SPECS/gnutls.spec --without dane --without tpm2 --without tpm12 --nodeps
 ```
+
 ## crypto-policies
 
 修改spec文件中的ExclusiveArch, 添加loongarch64
@@ -4249,7 +4391,7 @@ Installed (but unpackaged) file(s) found:
 /usr/lib/tmpfiles.d/polkit-tmpfiles.conf
 ```
 
-##  pcsc-lite
+## pcsc-lite
 
 修改spec文件， `-Dlibsystemd=true` 改为`-Dlibsystemd=false`
 
@@ -4257,12 +4399,14 @@ Installed (but unpackaged) file(s) found:
 ```bash
 PKG_CONFIG_PATH+=/tools/lib64/pkgconfig: rpmbuild -bb rpmbuild/SPECS/pcsc-lite.spec --nodeps
 ```
+
 ## opensc
 
 依赖基本满足，正常编译即可。
 ```bash
 rpmbuild -bb rpmbuild/SPECS/opensc.spec --nodeps
 ```
+
 ## cppunit
 
 正常编译即可
@@ -4283,6 +4427,7 @@ rpmbuild -bb rpmbuild/SPECS/opensc.spec --nodeps
 -DCLIENT_TESTING=OFF \\
 -DSERVER_TESTING=OFF
 ```
+
 ## libidn2
 
 正常编译即可。
@@ -4300,10 +4445,12 @@ rpmbuild -bb rpmbuild/SPECS/opensc.spec --nodeps
 正常编译即可。
 
 ## jq
+
 编译脚本
 ```bash
-QA_RPATHS=$(( 0x0002\|0x0010 )) rpmbuild --rebuild /opt/srpms/Packages/jq-1.7.1-11.el10.src.rpm
+QA_RPATHS=$(( 0x0002|0x0010 )) rpmbuild --rebuild /opt/srpms/Packages/jq-1.7.1-11.el10.src.rpm
 ```
+
 ## socat
 
 正常编译即可。
@@ -4372,6 +4519,7 @@ Installed (but unpackaged) file(s) found:
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/logrotate-3.22.0-4.el10.src.rpm --nodeps --nocheck
 ```
+
 ## rpm
 
 没有安装rust，所以无法安装rpm-sequoia。暂时去掉对这个的依赖。
@@ -4406,7 +4554,8 @@ rpmbuild -bb rpmbuild/SPECS/rpm.spec --without sequoia --nodeps
 ```
 rpm的一个插件不太好用，暂时禁用这个插件，可以给它改个名字 `/usr/lib64/rpm-plugins/dbus_announce.so`
 
-##  perl-generators
+## perl-generators
+
 由于包管理系统有变动，到这个阶段，需要重新编译一些软件包。
 
 正常编译即可。
@@ -4498,7 +4647,7 @@ fi
 
 编译脚本：
 ```bash
-rpmbuild --rebuild /opt/srpms/Packages/corosync-3.1.9-2.el10.src.rpm --without systemd --without snmp --nodeps 
+rpmbuild --rebuild /opt/srpms/Packages/corosync-3.1.9-2.el10.src.rpm --without systemd --without snmp --nodeps
 ```
 
 ## device-mapper-persistent-data
@@ -4668,6 +4817,7 @@ rpmbuild --rebuild /opt/srpms/Packages/libmnl-1.0.5-7.el10.src.rpm --define '_un
 ```bash
 rpmbuild -bb rpmbuild/SPECS/systemd.spec --define "version_no_tilde 257 " --nodeps --nocheck
 ```
+
 ## dbus-broker
 
 正常编译即可。
@@ -4689,6 +4839,7 @@ rpmbuild -bb rpmbuild/SPECS/systemd.spec --define "version_no_tilde 257 " --node
 去掉制作文档的部分。
 
 ## tree-sitter
+
 正常编译即可。
 
 ## desktop-file-utils
@@ -4701,7 +4852,9 @@ rpmbuild -bb rpmbuild/SPECS/systemd.spec --define "version_no_tilde 257 " --node
 ```bash
 rpmbuild -bb rpmbuild/SPECS/desktop-file-utils.spec -D "_emacs_sitestartdir /usr/share/emacs/site-lisp/site-start.d" -D " _emacs_sitelispdir /usr/share/emacs/site-lisp" --nodeps
 ```
+
 ## appstream
+
 正常编译即可。
 
 ## emacs
@@ -4715,9 +4868,11 @@ emacs也依赖desktop-file-utils。循环依赖了。
 还依赖appstream-utils。构建的时候加上`--nocheck`。
 
 ## google-noto-fonts
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/google-noto-fonts-20240401-5.el10.src.rpm --nocheck
 ```
+
 ## xaw3d
 
 已经编译过了。
@@ -4791,6 +4946,7 @@ loongarch64-redhat-linux-gnu
 check通不过，加上`--nocheck`
 
 ## git
+
 编译脚本
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/git-2.47.3-1.el10.src.rpm --nodeps --nocheck
@@ -4798,10 +4954,12 @@ rpmbuild --rebuild /opt/srpms/Packages/git-2.47.3-1.el10.src.rpm --nodeps --noch
 选择性安装一部分git的软件包即可。
 
 ## umockdev
+
 编译脚本
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/umockdev-0.19.1-2.el10.src.rpm --nodeps --nocheck
 ```
+
 ## libgudev1
 
 正常编译即可。
@@ -4844,6 +5002,7 @@ rpmbuild --rebuild /opt/srpms/Packages/umockdev-0.19.1-2.el10.src.rpm --nodeps -
 ```bash
 rpmbuild -ba rpmbuild/SPECS/psmisc.spec
 ```
+
 ## iproute
 
 正常编译
@@ -4865,19 +5024,25 @@ rpmbuild -ba rpmbuild/SPECS/psmisc.spec
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/perl-Test-Output-1.03.4-6.el10.src.rpm --nodeps
 ```
+
 ## perl-IPC-Run3
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/perl-IPC-Run3-0.049-4.el10.src.rpm --nodeps --nocheck
 ```
+
 ## libmaxminddb
 
 尝试尽量补全依赖关系
 
 ## rubygem-ronn-ng
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/rubygem-ronn-ng-0.10.1-5.el10.src.rpm --nodeps --nocheck
 ```
+
 ## rubygem-kramdown
+
 ```bash
 rpmbuild  --rebuild /opt/srpms/Packages/rubygem-kramdown-2.4.0-11.el10.src.rpm --nodeps --nocheck
 ```
@@ -4889,6 +5054,7 @@ rpmbuild --rebuild /opt/srpms/Packages/rubygem-mustache-1.1.1-11.el10.src.rpm --
 ```
 
 ## rubygem-nokogiri
+
 正常编译
 
 ## rubygem-racc
@@ -4901,6 +5067,7 @@ ERROR:  Error installing racc-1.7.3.gem:
 ERROR: Failed to build gem native extension.
     No such file or directory @ dir_s_mkdir - /usr/share/gems/gems/racc-1.7.3/ext/racc/cparse/.gem.20260512-110776-rija44
 ```
+
 ## ipcalc
 
 缺少racc, 未能安装。只是用ronn来产生文档。可以跳过。
@@ -4909,6 +5076,7 @@ ERROR: Failed to build gem native extension.
 ```bash
 rpmbuild -bb rpmbuild/SPECS/ipcalc.spec --nodeps --nocheck
 ```
+
 ## dhcp
 
 依赖ipcalc，还是需要想办法补上ipcalc。
@@ -4934,6 +5102,7 @@ rpmbuild -bb rpmbuild/SPECS/ipcalc.spec --nodeps --nocheck
 ```bash
 rpmbuild -bb rpmbuild/SPECS/tzdata.spec --nodeps
 ```
+
 ## bc
 
 正常编译即可。
@@ -4943,6 +5112,7 @@ rpmbuild -bb rpmbuild/SPECS/tzdata.spec --nodeps
 正常编译即可。
 
 ## libical
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/libical-3.0.18-3.el10.src.rpm --nodeps --nocheck
 ```
@@ -4969,6 +5139,7 @@ bluez依赖libell。完成。
 找不到安装包。
 
 ## libkcapi
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/libkcapi-1.5.0-3.el10.src.rpm --nodeps --without doc --nocheck
 ```
@@ -4978,6 +5149,7 @@ rpmbuild --rebuild /opt/srpms/Packages/libkcapi-1.5.0-3.el10.src.rpm --nodeps --
 完成编译，尚未安装
 
 ## gnu-efi
+
 exclusivearch 中，添加loongarch64。
 
 更加合适的解决方案应该是给%efi这个rpm的宏，添加loongarch64。
@@ -5010,7 +5182,7 @@ exclusivearch 中，添加loongarch64。
 
 到这里，重新编译一些依赖systemd的软件包
 
-##  perl-Module-Build
+## perl-Module-Build
 
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/perl-Module-Build-0.42.34-7.el10.src.rpm --nodeps --nocheck
@@ -5028,7 +5200,7 @@ rpmbuild --rebuild /opt/srpms/Packages/po4a-0.69-7.el10.src.rpm --nodeps
 
 正常编译即可。
 
-##  perl-Module-Install
+## perl-Module-Install
 
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/perl-Module-Install-1.21-6.el10.src.rpm --nodeps --nocheck
@@ -5146,9 +5318,11 @@ rpmbuild -bb rpmbuild/SPECS/libnvme.spec --nodeps
 重新编译安装。
 
 ## corosync
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/corosync-3.1.9-2.el10.src.rpm --without snmp
 ```
+
 ## libpq
 
 重新编译安装。
@@ -5162,9 +5336,11 @@ rpmbuild --rebuild /opt/srpms/Packages/corosync-3.1.9-2.el10.src.rpm --without s
 重新编译安装。
 
 ## p11-kit
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/p11-kit-0.25.5-7.el10.src.rpm --nocheck
 ```
+
 ## fuse3
 
 e2fsprogs依赖fuse3。
@@ -5176,6 +5352,7 @@ rpmbuild --rebuild /opt/srpms/Packages/e2fsprogs-1.47.1-4.el10.src.rpm --nocheck
 ```
 
 ## 配置和重启系统
+
 ```bash
 sudo mv /etc/machine-id /etc/machine-id.bak
 sudo mv /etc/profile /etc/profile.bak
@@ -5203,6 +5380,7 @@ sudo rpm -Uvh /home/rocky/rpmbuild/RPMS/noarch/setup-*.rpm --force
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/vim-9.1.083-6.el10.src.rpm --without gui --nodeps
 ```
+
 ## python-nose
 
 找不到安装包
@@ -5220,15 +5398,19 @@ rpm-plugin-dbus-announce-4.19.1.1-20.el10~bootstrap.loongarch.loongarch64
 ```bash
 QA_RPATHS=$(( 0x0001)) rpmbuild --rebuild /opt/srpms/Packages/gpgme-1.23.2-6.el10.src.rpm --without qt5 --without qt6
 ```
+
 ## patchutils
 
 直接编译安装即可。
 
 ## check
+
 ```bash
-rpmbuild --rebuild /opt/srpms/Packages/check-0.15.2-17.el10.src.rpm --nodeps 
+rpmbuild --rebuild /opt/srpms/Packages/check-0.15.2-17.el10.src.rpm --nodeps
 ```
+
 ## 可以简单编译的软件包
+
 - python-charset-normalizer
 - python-idna
 - python-urllib3
@@ -5247,7 +5429,7 @@ home/rocky/rpmbuild/BUILD/librepo-1.18.0/tests/test_gpg.c:51:F:Main:test_gpg_che
 原因暂时不清楚。先加上`--nocheck`绕过
 
 ```bash
-rpmbuild --rebuild /opt/srpms/Packages/librepo-1.18.0-6.el10_0.src.rpm --without pythontest --nodeps --nocheck 
+rpmbuild --rebuild /opt/srpms/Packages/librepo-1.18.0-6.el10_0.src.rpm --without pythontest --nodeps --nocheck
 ```
 
 ## tix
@@ -5338,6 +5520,7 @@ error: lua script failed: [string "forgemeta"]:2: module 'fedora.common' not fou
 重新安装redhat-rpm-config后，可以正常编译安装。
 
 ## 不需要编译的软件包(无源码包)
+
 - libtar
 - satyr
 - libmodman
@@ -5400,9 +5583,11 @@ rpmbuild --rebuild /opt/srpms/Packages/ostree-2025.6-1.el10.src.rpm --nodeps
 没有源码包。
 
 ## createrepo_c
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/createrepo_c-1.1.2-4.el10.src.rpm --nodeps
 ```
+
 ## dnf-plugins-core
 
 正常编译安装。
@@ -5437,12 +5622,15 @@ export PS1='[\u@\h \W]\$ '
 尽量给llvm补全依赖
 
 ## python-ptyprocess
+
 正常编译即可。
 
 ## zsh
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/zsh-5.9-15.el10.src.rpm --nodeps --nocheck
 ```
+
 ## python-pexpect
 
 ## llvm
@@ -5458,15 +5646,19 @@ rpmbuild --rebuild /opt/srpms/Packages/zsh-5.9-15.el10.src.rpm --nodeps --nochec
 execstack不支持龙架构，后续需要进行架构适配。
 
 ## zstd
+
 正常编译即可。
 
 ## liburing
+
 正常编译即可。
 
 ## plocate
+
 正常编译即可。
 
 ## rust
+
 下载rust的Loongarch版。
 
 从rust官网上下载rust
@@ -5483,6 +5675,7 @@ execstack不支持龙架构，后续需要进行架构适配。
 ## javapackges-tools
 
 ## 不需要编译的软件包(无源码包)
+
 - lua-lunit
 - lua-posix
 - copy-jdk-config
@@ -5504,7 +5697,7 @@ execstack不支持龙架构，后续需要进行架构适配。
 
 ```text
 compiling cc v1.2.17
-Building [=>                          ] 9/85: libc(build), proc-macro2(build), generic-array(build), typenum(build)  
+Building [=>                          ] 9/85: libc(build), proc-macro2(build), generic-array(build), typenum(build)
 ```
 
 不知道为什么会这样。先跳过。
@@ -5522,6 +5715,7 @@ Building [=>                          ] 9/85: libc(build), proc-macro2(build), g
 先跳过
 
 ## 一批可以简单编译的软件包
+
 - wayland
 - wayland-protocols
 - hwdata
@@ -5588,6 +5782,7 @@ RESULTS: 109 tests (108 ok, 1 failed, 0 skipped) ran in 293 ms
 只知道是编译器的问题。暂时先放下这个包。
 
 ## numpy
+
 正常编译即可。
 
 ## snappy
@@ -5606,11 +5801,14 @@ rpmbuild --rebuild /opt/srpms/Packages/wget-1.24.5-5.el10.src.rpm --nodeps --noc
 依赖snappy, wget且需要修改为支持龙架构。
 
 ## avahi
+
 编译脚本
 ```bash
 rpmbuild  -D "version_no_tilde 0.9-rc2" -bb ~/rpmbuild/SPECS/avahi.spec
 ```
+
 ## libdaemon
+
 正常编译即可
 
 ## dyninstall
@@ -5618,9 +5816,11 @@ rpmbuild  -D "version_no_tilde 0.9-rc2" -bb ~/rpmbuild/SPECS/avahi.spec
 需要添加龙架构支持 未完成安装
 
 ## xmltoman
+
 正常编译即可
 
 ## systemtap
+
 编译的过程中遇到报错：
 ```text
 staplog.c:50:2: error: invalid preprocessing directive #warn; did you mean #warning?
@@ -5632,7 +5832,9 @@ staplog.c:50:2: error: invalid preprocessing directive #warn; did you mean #warn
 ```bash
 rpmbuild -ba -D "with_dyninst 0"  -D "with_java 0" -D "with_virthost 0" rpmbuild/SPECS/systemtap.spec --nodeps
 ```
+
 ## 可以简单编译的软件包
+
 - yelp-xsl
 - ~~ atk~~(没有源码包)
 - fribidi
@@ -5643,11 +5845,13 @@ rpmbuild -ba -D "with_dyninst 0"  -D "with_java 0" -D "with_virthost 0" rpmbuild
 - libexif
 
 ## libcupsfilter
+
 ```bash
 rpmbuild --rebuild /opt/srpms/Packages/libcupsfilters-2.0.0-11.el10.src.rpm  --nodeps --nocheck
 ```
 
 ## 可以简单编译的软件包
+
 - libppd
 - cups-filter
 - python-imagesize
@@ -5662,22 +5866,26 @@ TZ=UTC rpmbuild  --rebuild /opt/srpms/Packages/python-sphinx-7.2.6-10.el10.src.r
 注意需要用TZ=UTC
 
 ## xdg-utils
+
   正常编译即可
 
 ## latexmk
+
   正常编译即可
-  
+
 ## gi-docgen
 
 依赖sphinx。编译脚本：
 ```bash
 TZ=UTC rpmbuild --rebuild /opt/srpms/Packages/gi-docgen-2023.3-10.el10.src.rpm --nodeps --nocheck
 ```
+
 ## harfbuz
 
 之前编译过一次，但编译的不全，再重新编译一遍。
 
 ## 可以简单编译的软件包
+
 - python-typogrify
 - python-smartypants
 - pango
