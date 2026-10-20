@@ -11,6 +11,7 @@ Rocky Linux作为Cent OS操作系统的后续，是一个很受欢迎的、非�
 # 笔记内容
 
 * [龙架构上Rocky Linux 10 操作系统移植笔记](Rocky_linux_10_for_loongarch64_porting_notes.md)
+* [English version (机器翻译，由大模型自动生成，仅供参考)](Rocky_linux_10_for_loongarch64_porting_notes_en.md)
 * [脚本](scripts/)
 * [源码](sources)
 
